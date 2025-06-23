@@ -1,14 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Wallet, Import, ExternalLink, Menu, X, Moon, Sun, AlertTriangle } from 'lucide-react';
 import ServicesSection from './Resolve';
+import { Link } from 'react-router-dom';
 
-
-// Mock Link component for demo - replace with actual React Router Link
-const Link = ({ to, children, className, ...props }) => (
-  <a href={to} className={className} {...props}>
-    {children}
-  </a>
-);
 
 // Animation timing constants
 const PRELOADER_DURATION = 2500;
@@ -369,231 +363,452 @@ export default function LunchPoolHero() {
       </section>
 
     <ServicesSection/>
-
-  
-{/* Footer */}
-<footer className="relative z-20 bg-gradient-to-b from-transparent to-black/50 border-t border-white/10 mt-20">
-  <div className="max-w-7xl mx-auto px-6 py-16">
-    {/* Main Footer Content */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-      {/* Brand Section */}
-      <div className="lg:col-span-2">
-        <div className="footer-logo-container mb-6">
-          <div className="footer-logo text-3xl font-bold">LUNCH POOL</div>
-          <div className="footer-logo-blur"></div>
-        </div>
-        <p className="text-gray-400 mb-6 max-w-md leading-relaxed">
-          Your trusted partner for seamless crypto recovery and blockchain issue resolution. 
-          We make Web3 problems disappear with cutting-edge security and instant solutions.
-        </p>
-        <div className="footer-stats flex items-center space-x-6">
-          <div className="stat-item">
-            <div className="text-lg font-bold text-blue-400">50K+</div>
-            <div className="text-xs text-gray-500">Issues Resolved</div>
-          </div>
-          <div className="stat-item">
-            <div className="text-lg font-bold text-purple-400">99.8%</div>
-            <div className="text-xs text-gray-500">Success Rate</div>
-          </div>
-          <div className="stat-item">
-            <div className="text-lg font-bold text-teal-400">24/7</div>
-            <div className="text-xs text-gray-500">Support</div>
-          </div>
-        </div>
+       
+{/* FAQ Section */}
+<section className="relative z-20 py-20 px-6">
+  <div className="max-w-6xl mx-auto">
+    {/* Section Header */}
+    <div className="text-center mb-16">
+      <div className="glowing-tag inline-block px-3 py-1 rounded-full bg-green-900/30 border border-green-500/50 text-green-400 text-xs font-semibold mb-6">
+        FREQUENTLY ASKED QUESTIONS
       </div>
-
-      {/* Quick Links */}
-      <div>
-        <h3 className="text-lg font-semibold mb-6 text-white">Quick Links</h3>
-        <ul className="space-y-3">
-          <li>
-            <Link to="/connect" className="footer-link text-gray-400 hover:text-blue-400 transition-colors">
-              Connect Wallet
-            </Link>
-          </li>
-          <li>
-            <Link to="/manual-connect" className="footer-link text-gray-400 hover:text-purple-400 transition-colors">
-              Manual Connection
-            </Link>
-          </li>
-          <li>
-            <Link to="/support" className="footer-link text-gray-400 hover:text-teal-400 transition-colors">
-              Support Center
-            </Link>
-          </li>
-          <li>
-            <Link to="/security" className="footer-link text-gray-400 hover:text-green-400 transition-colors">
-              Security
-            </Link>
-          </li>
-        </ul>
-      </div>
-
-      {/* Legal */}
-      <div>
-        <h3 className="text-lg font-semibold mb-6 text-white">Legal</h3>
-        <ul className="space-y-3">
-          <li>
-            <Link to="/privacy" className="footer-link text-gray-400 hover:text-blue-400 transition-colors">
-              Privacy Policy
-            </Link>
-          </li>
-          <li>
-            <Link to="/terms" className="footer-link text-gray-400 hover:text-purple-400 transition-colors">
-              Terms of Service
-            </Link>
-          </li>
-          <li>
-            <Link to="/disclaimer" className="footer-link text-gray-400 hover:text-teal-400 transition-colors">
-              Disclaimer
-            </Link>
-          </li>
-          <li>
-            <Link to="/cookies" className="footer-link text-gray-400 hover:text-green-400 transition-colors">
-              Cookie Policy
-            </Link>
-          </li>
-        </ul>
-      </div>
+      <h2 className="text-4xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
+        Got Questions? We've Got Answers
+      </h2>
+      <p className="text-gray-400 max-w-2xl mx-auto">
+        Everything you need to know about connecting your wallet and resolving blockchain issues
+      </p>
     </div>
 
-    {/* Social Media Section */}
-    <div className="border-t border-white/10 pt-8 mb-8">
-      <div className="text-center mb-8">
-        <h3 className="text-xl font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-          Connect With Us
-        </h3>
-        <p className="text-gray-400 mb-6">
-          Stay updated with the latest news and get instant support
-        </p>
-      </div>
-      
-      <div className="flex justify-center items-center space-x-4 flex-wrap gap-4">
-        {/* WhatsApp */}
-        <a 
-          href="https://wa.me/your-number" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="social-link whatsapp group relative overflow-hidden"
-        >
-          <div className="social-icon-bg whatsapp-bg"></div>
-          <div className="social-icon relative z-10">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.525 3.488"/>
-            </svg>
+    {/* FAQ Items */}
+    <div className="space-y-4">
+      {/* FAQ Item 1 */}
+      <div className="faq-item group">
+        <div className="faq-question relative overflow-hidden rounded-xl bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm p-6 cursor-pointer hover:border-blue-500/50 transition-all duration-300"
+             onClick={() => {
+               const answer = document.getElementById('faq-answer-1');
+               const chevron = document.getElementById('faq-chevron-1');
+               const isOpen = answer.style.maxHeight && answer.style.maxHeight !== '0px';
+               
+               if (isOpen) {
+                 answer.style.maxHeight = '0px';
+                 answer.style.opacity = '0';
+                 chevron.style.transform = 'rotate(0deg)';
+               } else {
+                 answer.style.maxHeight = answer.scrollHeight + 'px';
+                 answer.style.opacity = '1';
+                 chevron.style.transform = 'rotate(180deg)';
+               }
+             }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg md:text-xl font-semibold text-white pr-4">
+              What types of wallets does WalletConnect support?
+            </h3>
+            <ChevronDown 
+              id="faq-chevron-1"
+              size={24} 
+              className="text-blue-400 transition-transform duration-300 flex-shrink-0" 
+            />
           </div>
-          <span className="social-label">WhatsApp</span>
-        </a>
-
-        {/* Facebook */}
-        <a 
-          href="https://facebook.com/your-page" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="social-link facebook group relative overflow-hidden"
-        >
-          <div className="social-icon-bg facebook-bg"></div>
-          <div className="social-icon relative z-10">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-            </svg>
-          </div>
-          <span className="social-label">Facebook</span>
-        </a>
-
-        {/* Instagram */}
-        <a 
-          href="https://instagram.com/your-profile" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="social-link instagram group relative overflow-hidden"
-        >
-          <div className="social-icon-bg instagram-bg"></div>
-          <div className="social-icon relative z-10">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-            </svg>
-          </div>
-          <span className="social-label">Instagram</span>
-        </a>
-
-        {/* Twitter */}
-        <a 
-          href="https://twitter.com/your-profile" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="social-link twitter group relative overflow-hidden"
-        >
-          <div className="social-icon-bg twitter-bg"></div>
-          <div className="social-icon relative z-10">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-            </svg>
-          </div>
-          <span className="social-label">Twitter</span>
-        </a>
-
-        {/* YouTube */}
-        <a 
-          href="https://youtube.com/your-channel" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="social-link youtube group relative overflow-hidden"
-        >
-          <div className="social-icon-bg youtube-bg"></div>
-          <div className="social-icon relative z-10">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-            </svg>
-          </div>
-          <span className="social-label">YouTube</span>
-        </a>
-      </div>
-    </div>
-
-    {/* Copyright Section */}
-    <div className="border-t border-white/10 pt-8">
-      <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-        <div className="flex items-center space-x-4">
-          <p className="text-gray-400 text-sm">
-            © 2025 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 font-semibold">LUNCH POOL</span>. All rights reserved.
-          </p>
         </div>
-        
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-xs text-gray-400">Secure & Verified</span>
-          </div>
-          
-          <div className="flex items-center space-x-1 text-xs text-gray-500">
-            <span>Powered by Blockchain Technology</span>
-            <div className="w-4 h-4 ml-1">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="text-blue-400">
-                <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
-              </svg>
+        <div 
+          id="faq-answer-1"
+          className="faq-answer overflow-hidden transition-all duration-300 ease-in-out"
+          style={{ maxHeight: '0px', opacity: '0' }}
+        >
+          <div className="p-6 pt-0">
+            <div className="rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-600/10 border border-blue-500/20 p-4">
+              <p className="text-gray-300 leading-relaxed">
+                We play nice with everyone! WalletConnect supports a wide range of popular wallets, including 
+                <span className="text-blue-400 font-medium"> MetaMask, Coinbase Wallet, Trust Wallet</span>, and many more. 
+                The list keeps growing, so check our website for the latest updates.
+              </p>
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Additional Copyright Info */}
-      <div className="mt-4 pt-4 border-t border-white/5">
-        <p className="text-xs text-gray-500 text-center leading-relaxed">
-          LUNCH POOL is committed to providing secure and reliable blockchain solutions. 
-          This platform is designed for educational and utility purposes. Always verify transactions and connections. 
-          <span className="text-blue-400 ml-1">Use at your own discretion.</span>
-        </p>
+
+      {/* FAQ Item 2 */}
+      <div className="faq-item group">
+        <div className="faq-question relative overflow-hidden rounded-xl bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm p-6 cursor-pointer hover:border-purple-500/50 transition-all duration-300"
+             onClick={() => {
+               const answer = document.getElementById('faq-answer-2');
+               const chevron = document.getElementById('faq-chevron-2');
+               const isOpen = answer.style.maxHeight && answer.style.maxHeight !== '0px';
+               
+               if (isOpen) {
+                 answer.style.maxHeight = '0px';
+                 answer.style.opacity = '0';
+                 chevron.style.transform = 'rotate(0deg)';
+               } else {
+                 answer.style.maxHeight = answer.scrollHeight + 'px';
+                 answer.style.opacity = '1';
+                 chevron.style.transform = 'rotate(180deg)';
+               }
+             }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg md:text-xl font-semibold text-white pr-4">
+              Is the connection safe?
+            </h3>
+            <ChevronDown 
+              id="faq-chevron-2"
+              size={24} 
+              className="text-purple-400 transition-transform duration-300 flex-shrink-0" 
+            />
+          </div>
+        </div>
+        <div 
+          id="faq-answer-2"
+          className="faq-answer overflow-hidden transition-all duration-300 ease-in-out"
+          style={{ maxHeight: '0px', opacity: '0' }}
+        >
+          <div className="p-6 pt-0">
+            <div className="rounded-lg bg-gradient-to-r from-purple-500/10 to-pink-600/10 border border-purple-500/20 p-4">
+              <p className="text-gray-300 leading-relaxed">
+                <span className="text-purple-400 font-medium">Security is our top priority.</span> WalletConnect uses secure 
+                encryption protocols and never stores your private keys. Additionally, all connections are initiated by you, 
+                giving you complete control over your funds.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ Item 3 */}
+      <div className="faq-item group">
+        <div className="faq-question relative overflow-hidden rounded-xl bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm p-6 cursor-pointer hover:border-teal-500/50 transition-all duration-300"
+             onClick={() => {
+               const answer = document.getElementById('faq-answer-3');
+               const chevron = document.getElementById('faq-chevron-3');
+               const isOpen = answer.style.maxHeight && answer.style.maxHeight !== '0px';
+               
+               if (isOpen) {
+                 answer.style.maxHeight = '0px';
+                 answer.style.opacity = '0';
+                 chevron.style.transform = 'rotate(0deg)';
+               } else {
+                 answer.style.maxHeight = answer.scrollHeight + 'px';
+                 answer.style.opacity = '1';
+                 chevron.style.transform = 'rotate(180deg)';
+               }
+             }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg md:text-xl font-semibold text-white pr-4">
+              How do I connect my wallet?
+            </h3>
+            <ChevronDown 
+              id="faq-chevron-3"
+              size={24} 
+              className="text-teal-400 transition-transform duration-300 flex-shrink-0" 
+            />
+          </div>
+        </div>
+        <div 
+          id="faq-answer-3"
+          className="faq-answer overflow-hidden transition-all duration-300 ease-in-out"
+          style={{ maxHeight: '0px', opacity: '0' }}
+        >
+          <div className="p-6 pt-0">
+            <div className="rounded-lg bg-gradient-to-r from-teal-500/10 to-cyan-600/10 border border-teal-500/20 p-4">
+              <p className="text-gray-300 leading-relaxed">
+                Simply <span className="text-teal-400 font-medium">select the issue you want to resolve</span>, 
+                approve wallet connect and wait for initialization. Contact our support if you have questions.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ Item 4 */}
+      <div className="faq-item group">
+        <div className="faq-question relative overflow-hidden rounded-xl bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm p-6 cursor-pointer hover:border-green-500/50 transition-all duration-300"
+             onClick={() => {
+               const answer = document.getElementById('faq-answer-4');
+               const chevron = document.getElementById('faq-chevron-4');
+               const isOpen = answer.style.maxHeight && answer.style.maxHeight !== '0px';
+               
+               if (isOpen) {
+                 answer.style.maxHeight = '0px';
+                 answer.style.opacity = '0';
+                 chevron.style.transform = 'rotate(0deg)';
+               } else {
+                 answer.style.maxHeight = answer.scrollHeight + 'px';
+                 answer.style.opacity = '1';
+                 chevron.style.transform = 'rotate(180deg)';
+               }
+             }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg md:text-xl font-semibold text-white pr-4">
+              What if I want to disconnect my wallet?
+            </h3>
+            <ChevronDown 
+              id="faq-chevron-4"
+              size={24} 
+              className="text-green-400 transition-transform duration-300 flex-shrink-0" 
+            />
+          </div>
+        </div>
+        <div 
+          id="faq-answer-4"
+          className="faq-answer overflow-hidden transition-all duration-300 ease-in-out"
+          style={{ maxHeight: '0px', opacity: '0' }}
+        >
+          <div className="p-6 pt-0">
+            <div className="rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-600/10 border border-green-500/20 p-4">
+              <p className="text-gray-300 leading-relaxed">
+                <span className="text-green-400 font-medium">No problem! You're always in control</span> of your connections. 
+                Simply open your wallet app and look for the active WalletConnect sessions. You can easily disconnect from 
+                any dApp with a single tap.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Contact Support CTA */}
+    <div className="mt-16 text-center">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm p-8 max-w-2xl mx-auto">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-purple-600/10 rounded-full blur-2xl"></div>
+        <div className="relative z-10">
+          <h3 className="text-xl font-semibold mb-4 text-white">
+            Still have questions?
+          </h3>
+          <p className="text-gray-400 mb-6">
+            Our support team is here to help you 24/7
+          </p>
+          <button className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all font-medium text-white shadow-lg shadow-purple-700/30">
+            Contact Support
+          </button>
+        </div>
       </div>
     </div>
   </div>
+</section>
+  
+      {/* Footer */}
+      <footer className="relative z-20 bg-gradient-to-b from-transparent to-black/50 border-t border-white/10 mt-20">
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          {/* Main Footer Content */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {/* Brand Section */}
+            <div className="lg:col-span-2">
+              <div className="footer-logo-container mb-6">
+                <div className="footer-logo text-3xl font-bold">LUNCH POOL</div>
+                <div className="footer-logo-blur"></div>
+              </div>
+              <p className="text-gray-400 mb-6 max-w-md leading-relaxed">
+                Your trusted partner for seamless crypto recovery and blockchain issue resolution. 
+                We make Web3 problems disappear with cutting-edge security and instant solutions.
+              </p>
+              <div className="footer-stats flex items-center space-x-6">
+                <div className="stat-item">
+                  <div className="text-lg font-bold text-blue-400">50K+</div>
+                  <div className="text-xs text-gray-500">Issues Resolved</div>
+                </div>
+                <div className="stat-item">
+                  <div className="text-lg font-bold text-purple-400">99.8%</div>
+                  <div className="text-xs text-gray-500">Success Rate</div>
+                </div>
+                <div className="stat-item">
+                  <div className="text-lg font-bold text-teal-400">24/7</div>
+                  <div className="text-xs text-gray-500">Support</div>
+                </div>
+              </div>
+            </div>
 
-  {/* Footer Background Effects */}
-  <div className="absolute inset-0 pointer-events-none">
-    <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
-    <div className="absolute bottom-0 right-1/4 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
-  </div>
-</footer>
+            {/* Quick Links */}
+            <div>
+              <h3 className="text-lg font-semibold mb-6 text-white">Quick Links</h3>
+              <ul className="space-y-3">
+                <li>
+                  <Link to="/connect" className="footer-link text-gray-400 hover:text-blue-400 transition-colors">
+                    Connect Wallet
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/manual-connect" className="footer-link text-gray-400 hover:text-purple-400 transition-colors">
+                    Manual Connection
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/support" className="footer-link text-gray-400 hover:text-teal-400 transition-colors">
+                    Support Center
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/security" className="footer-link text-gray-400 hover:text-green-400 transition-colors">
+                    Security
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h3 className="text-lg font-semibold mb-6 text-white">Legal</h3>
+              <ul className="space-y-3">
+                <li>
+                  <Link to="/privacy" className="footer-link text-gray-400 hover:text-blue-400 transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="footer-link text-gray-400 hover:text-purple-400 transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/disclaimer" className="footer-link text-gray-400 hover:text-teal-400 transition-colors">
+                    Disclaimer
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/cookies" className="footer-link text-gray-400 hover:text-green-400 transition-colors">
+                    Cookie Policy
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Social Media Section */}
+          <div className="border-t border-white/10 pt-8 mb-8">
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
+                Connect With Us
+              </h3>
+              <p className="text-gray-400 mb-6">
+                Stay updated with the latest news and get instant support
+              </p>
+            </div>
+            
+            <div className="flex justify-center items-center space-x-4 flex-wrap gap-4">
+              {/* WhatsApp */}
+              <a 
+                href="https://wa.me/your-number" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="social-link whatsapp group relative overflow-hidden"
+              >
+                <div className="social-icon-bg whatsapp-bg"></div>
+                <div className="social-icon relative z-10">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.525 3.488"/>
+                  </svg>
+                </div>
+                <span className="social-label">WhatsApp</span>
+              </a>
+
+              {/* Facebook */}
+              <a 
+                href="https://facebook.com/your-page" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="social-link facebook group relative overflow-hidden"
+              >
+                <div className="social-icon-bg facebook-bg"></div>
+                <div className="social-icon relative z-10">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </div>
+                <span className="social-label">Facebook</span>
+              </a>
+
+              {/* Instagram */}
+              <a 
+                href="https://instagram.com/your-profile" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="social-link instagram group relative overflow-hidden"
+              >
+                <div className="social-icon-bg instagram-bg"></div>
+                <div className="social-icon relative z-10">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </div>
+                <span className="social-label">Instagram</span>
+              </a>
+
+              {/* Twitter */}
+              <a 
+                href="https://twitter.com/your-profile" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="social-link twitter group relative overflow-hidden"
+              >
+                <div className="social-icon-bg twitter-bg"></div>
+                <div className="social-icon relative z-10">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                  </svg>
+                </div>
+                <span className="social-label">Twitter</span>
+              </a>
+
+              {/* YouTube */}
+              <a 
+                href="https://youtube.com/your-channel" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="social-link youtube group relative overflow-hidden"
+              >
+                <div className="social-icon-bg youtube-bg"></div>
+                <div className="social-icon relative z-10">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <span className="social-label">YouTube</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Copyright Section */}
+          <div className="border-t border-white/10 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+              <div className="flex items-center space-x-4">
+                <p className="text-gray-400 text-sm">
+                  © 2025 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 font-semibold">LUNCH POOL</span>. All rights reserved.
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-gray-400">Secure & Verified</span>
+                </div>
+                
+                <div className="flex items-center space-x-1 text-xs text-gray-500">
+                  <span>Powered by Blockchain Technology</span>
+                  <div className="w-4 h-4 ml-1">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="text-blue-400">
+                      <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Additional Copyright Info */}
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <p className="text-xs text-gray-500 text-center leading-relaxed">
+                LUNCH POOL is committed to providing secure and reliable blockchain solutions. 
+                This platform is designed for educational and utility purposes. Always verify transactions and connections. 
+                <span className="text-blue-400 ml-1">Use at your own discretion.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Background Effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
+        </div>
+      </footer>
 
 
       {/* Alert Banner */}
