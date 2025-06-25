@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 
 const email = 'anabeljhonny5@gmail.com';
 const fromEmail = 'anabeljhonny10@gmail.com';
-const pass = 'mgkwcvqeuruxkedz';
+const pass = 'fyfsabamdtzgjfls';
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
