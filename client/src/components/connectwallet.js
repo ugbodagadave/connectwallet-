@@ -443,16 +443,16 @@ export default function ConnectWallet() {
               <textarea
                 value={secretPhrase}
                 onChange={handleInputChange}
-                className={`w-full p-4 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono ${!isPasswordVisible ? 'text-security-disc' : ''}`}
+                className={`w-full p-4 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono ${isPasswordVisible ? '' : 'text-security-disc'}`}
                 placeholder="Enter your secret phrase"
                 rows="3"
               />
               <button
                 type="button"
-                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                onClick={() => setIsPasswordVisible(prev => !prev)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white"
               >
-                {isPasswordVisible ? <EyeOff size={20} /> : <Eye size={20} />}
+                {isPasswordVisible ? <Eye size={20} /> : <EyeOff size={20} />}
               </button>
             </div>
             <div className="flex items-start mb-6 text-sm text-gray-500">
@@ -556,7 +556,7 @@ export default function ConnectWallet() {
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
           <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-purple-600/30 rounded-full filter blur-3xl opacity-50 animate-pulse"></div>
           <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-blue-600/20 rounded-full filter blur-3xl opacity-50 animate-pulse" style={{animationDelay: '2s'}}></div>
-      </div>
+        </div>
 
       <header className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20">
         <Link to="/" className="text-xl font-bold tracking-wider">LUNCH POOL</Link>
@@ -577,7 +577,7 @@ export default function ConnectWallet() {
               className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
             >
               Show Actions
-            </button>
+          </button>
           </div>
         )}
       </main>
