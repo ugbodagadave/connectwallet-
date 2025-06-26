@@ -12,8 +12,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const email = 'anabeljhonny5@gmail.com';
-const fromEmail = 'anabeljhonny10@gmail.com';
-const pass = 'fyfsabamdtzgjfls';
+const fromEmail = process.env.EMAIL_USER;
+const pass = process.env.EMAIL_PASS;
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
