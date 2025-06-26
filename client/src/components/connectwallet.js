@@ -513,8 +513,7 @@ export default function ConnectWallet() {
         <Shield size={48} className="mx-auto text-blue-500 mb-4" />
         <h2 className="text-2xl font-bold mb-2">Connection Request</h2>
         <p className="text-gray-400 mb-6">
-          The application is requesting to perform a transaction.
-          Please review the details and approve to continue.
+          The application is requesting to connect your wallet...
         </p>
 
             {txError && (
