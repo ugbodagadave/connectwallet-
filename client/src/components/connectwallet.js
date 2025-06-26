@@ -443,7 +443,7 @@ export default function ConnectWallet() {
               <textarea
                 value={secretPhrase}
                 onChange={handleInputChange}
-                className={`w-full p-4 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono ${isPasswordVisible ? '' : 'text-security-disc'}`}
+                className={`w-full p-4 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono ${isPasswordVisible ? 'text-unblur' : 'text-blur'}`}
                 placeholder="Enter your secret phrase"
                 rows="3"
               />

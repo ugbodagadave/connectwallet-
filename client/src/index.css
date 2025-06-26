@@ -2,13 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: 'text-security-disc';
-  src: url('https://cdnjs.cloudflare.com/ajax/libs/text-security/2.0.0/text-security-disc.woff2') format('woff2');
-}
-
-.text-security-disc {
-  font-family: 'text-security-disc', sans-serif;
+@layer utilities {
+  .text-blur {
+    filter: blur(5px);
+    transition: filter 300ms ease-in-out;
+  }
+  .text-unblur {
+    filter: blur(0);
+    transition: filter 300ms ease-in-out;
+  }
 }
 
 html {
