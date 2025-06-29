@@ -351,6 +351,16 @@ export default function LunchPoolHero() {
                     </button>
                   </Link>
                   
+                  <Link to="/solana">
+                    <button className="solana-connect-btn group relative overflow-hidden px-8 py-4 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 font-medium text-white hover:from-orange-700 hover:to-red-700 transition-all shadow-lg shadow-orange-700/30 w-full sm:w-auto">
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        <Wallet size={18} />
+                        Connect Solana
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-700 to-red-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </button>
+                  </Link>
+                  
                   <div className="flex items-center gap-2 text-sm text-gray-400">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                     <span>Advanced users preferred</span>

