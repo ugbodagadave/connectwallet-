@@ -241,6 +241,19 @@ export default function ConnectWallet() {
   useEffect(() => {
     const fetchWalletIcons = async () => {
       setIsLoadingWallets(true);
+
+      // Check sessionStorage cache (24h TTL)
+      const cacheKey = 'wc_wallet_icons';
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < 24 * 60 * 60 * 1000) {
+          setDynamicWallets(data);
+          setIsLoadingWallets(false);
+          return;
+        }
+      }
+
       try {
         const response = await fetch(
           `https://explorer-api.walletconnect.com/v3/wallets?projectId=${projectId}&entries=100&page=1`
@@ -253,9 +266,11 @@ export default function ConnectWallet() {
           description: wallet.description || 'A secure wallet for your crypto.',
         }));
         setDynamicWallets(wallets);
+
+        // store in cache
+        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: wallets }));
       } catch (error) {
         console.error('Failed to fetch wallet icons:', error);
-        // Fallback to a default list can be handled here if needed
       } finally {
         setIsLoadingWallets(false);
       }
