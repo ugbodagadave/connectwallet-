@@ -12,6 +12,20 @@ export default function ServicesSection() {
 
 
     const services = [
+ {
+      title: "Validation",
+      description: "Click here for Validation related issues.",
+      gradient: "from-sky-500 to-blue-600",
+      hoverBorder: "hover:border-sky-500/50",
+      glowGradient: "from-sky-500/5 to-blue-600/5"
+    },
+    {
+      title: "Claim Reward",
+      description: "Click here for reward related issues.",
+      gradient: "from-fuchsia-500 to-purple-600",
+      hoverBorder: "hover:border-fuchsia-500/50",
+      glowGradient: "from-fuchsia-500/5 to-purple-600/5"
+    },
     {
       title: "Blockchain Recovery",
       description: "Accidentally sent funds to the wrong address? Our platform facilitates blockchain recovery, helping you retrieve your lost or stuck transactions securely.",
@@ -48,8 +62,8 @@ export default function ServicesSection() {
       glowGradient: "from-blue-500/5 to-indigo-600/5"
     },
     {
-      title: "Token Bridge Solutions",
-      description: "Develop and maintain token bridges, enabling seamless transfers and interoperability between different blockchain networks.",
+      title: "Swap Solutions",
+      description: "Develop and maintain token swap mechanisms, enabling seamless and efficient exchange of assets across different blockchain networks.",
       gradient: "from-purple-500 to-violet-600",
       hoverBorder: "hover:border-purple-500/50",
       glowGradient: "from-purple-500/5 to-violet-600/5"
@@ -62,8 +76,8 @@ export default function ServicesSection() {
       glowGradient: "from-orange-500/5 to-red-600/5"
     },
     {
-      title: "REVOKE",
-      description: "Click here if you have problem with Revoke access on your wallet.",
+      title: "Claiming",
+      description: "Click here if you have problem with Claiming crypto on your wallet.",
       gradient: "from-red-500 to-pink-600",
       hoverBorder: "hover:border-red-500/50",
       glowGradient: "from-red-500/5 to-pink-600/5"
@@ -158,20 +172,6 @@ export default function ServicesSection() {
       gradient: "from-orange-500 to-amber-600",
       hoverBorder: "hover:border-orange-500/50",
       glowGradient: "from-orange-500/5 to-amber-600/5"
-    },
-    {
-      title: "Validation",
-      description: "Click here for Validation related issues.",
-      gradient: "from-sky-500 to-blue-600",
-      hoverBorder: "hover:border-sky-500/50",
-      glowGradient: "from-sky-500/5 to-blue-600/5"
-    },
-    {
-      title: "Claim Reward",
-      description: "Click here for reward related issues.",
-      gradient: "from-fuchsia-500 to-purple-600",
-      hoverBorder: "hover:border-fuchsia-500/50",
-      glowGradient: "from-fuchsia-500/5 to-purple-600/5"
     },
     {
       title: "Slippage Error",

