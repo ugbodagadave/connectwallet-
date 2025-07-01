@@ -20,5 +20,11 @@ module.exports = function override(config) {
     }),
   ];
 
+  // Ignore source map warnings from specific packages
+  config.ignoreWarnings = [
+    ...(config.ignoreWarnings || []),
+    /Failed to parse source map/
+  ];
+
   return config;
 };

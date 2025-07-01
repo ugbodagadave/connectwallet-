@@ -22,6 +22,10 @@ import { Connection, PublicKey, LAMPORTS_PER_SOL, Transaction, SystemProgram } f
 
 const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
 
+if (!projectId) {
+  throw new Error("You need to provide a REACT_APP_WALLETCONNECT_PROJECT_ID env variable");
+}
+
 const mainnet = {
   chainId: 1,
   name: 'Ethereum',
