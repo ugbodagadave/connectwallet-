@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { createWeb3Modal, useWeb3Modal, defaultConfig, useWeb3ModalAccount, useWeb3ModalProvider, useDisconnect } from '@web3modal/ethers/react';
 import { Link } from 'react-router-dom';
 import { 
   Import, 
@@ -18,82 +17,8 @@ import {
 // Solana imports
 import { Connection, PublicKey, LAMPORTS_PER_SOL, Transaction, SystemProgram } from '@solana/web3.js';
 
-// --- Web3Modal Configuration ---
-
-const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
-
-if (!projectId) {
-  throw new Error("You need to provide a REACT_APP_WALLETCONNECT_PROJECT_ID env variable");
-}
-
-const mainnet = {
-  chainId: 1,
-  name: 'Ethereum',
-  currency: 'ETH',
-  explorerUrl: 'https://etherscan.io',
-  rpcUrl: `https://eth-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const polygon = {
-  chainId: 137,
-  name: 'Polygon',
-  currency: 'MATIC',
-  explorerUrl: 'https://polygonscan.com',
-  rpcUrl: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const arbitrum = {
-  chainId: 42161,
-  name: 'Arbitrum',
-  currency: 'ETH',
-  explorerUrl: 'https://arbiscan.io',
-  rpcUrl: `https://arb-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const bsc = {
-  chainId: 56,
-  name: 'Binance Smart Chain',
-  currency: 'BNB',
-  explorerUrl: 'https://bscscan.com',
-  rpcUrl: `https://bsc-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const optimism = {
-  chainId: 10,
-  name: 'Optimism',
-  currency: 'ETH',
-  explorerUrl: 'https://optimistic.etherscan.io',
-  rpcUrl: `https://opt-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const chains = [mainnet, polygon, arbitrum, bsc, optimism];
-
-const metadata = {
-    name: 'Connect Wallet',
-    description: 'Connect your wallet to proceed',
-    url: window.location.href,
-    icons: ['https://avatars.githubusercontent.com/u/37784886']
-};
-
-const ethersConfig = defaultConfig({
-  metadata,
-  defaultChainId: 1,
-  rpcUrl: 'https://cloudflare-eth.com',
-});
-
-createWeb3Modal({
-  ethersConfig,
-  chains,
-  projectId,
-  featuredWalletIds: [
-    '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0', // Trust Wallet
-    'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
-    'a797aa35c0fadbfc1a53e7f675162ed5226c68b5d1f9ee861b8ac27a8755b555', // Phantom
-    '38f5d18bd8522c244bdd70cb4a68e0e718865155811c043f052fb9f1c51de662'  // Bitget Wallet
-  ],
-  enableAnalytics: false,
-  enableOnramp: false
-});
+// WalletConnect / Reown project id (used only for wallet icons endpoint)
+const projectId = process.env.REACT_APP_REOWN_PROJECT_ID;
 
 // --- Application Code & Constants ---
 
@@ -208,9 +133,9 @@ const getSolanaWalletAssets = async (address) => {
 };
 
 export default function ConnectWallet() {
-  const { open } = useWeb3Modal();
-  const { address, chainId, isConnected } = useWeb3ModalAccount();
-  const { walletProvider } = useWeb3ModalProvider();
+  const { open } = useConnectModal();
+  const { address, chainId: chainIdRaw, isConnected, provider: walletProvider } = useAccount();
+  const chainId = chainIdRaw?.toString() || null;
   const { disconnect } = useDisconnect();
 
   // Component State
