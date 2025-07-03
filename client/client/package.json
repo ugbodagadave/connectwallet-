@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@reown/walletkit": "^1.2.8",
+    "@web3modal/ethers": "^5.1.11",
+    "joseph": "file:..",
+    "qrcode.react": "^4.2.0"
+  }
+}
