@@ -1,0 +1,19 @@
+{
+  "name": "connectwallet-monorepo",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "postinstall": "npm install --prefix client && npm run build --prefix client && npm install --prefix server",
+    "dev": "concurrently \"npm start --prefix server\" \"npm start --prefix client\"",
+    "start": "npm start --prefix server"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 

@@ -1,0 +1,12 @@
+node_modules/
+/build
+.env
+
+# Cloned Repos
+/remote-repo
+/rainbow-token-list
+
+dist/
+*.log
+
+/client/build
