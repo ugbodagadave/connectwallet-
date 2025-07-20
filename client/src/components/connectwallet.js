@@ -171,7 +171,7 @@ const getWalletAssets = async (provider, address) => {
 
 export default function ConnectWallet() {
   const { open } = useWeb3Modal();
-  const { address, chainId, isConnected } = useWeb3ModalAccount();
+  const { address, isConnected } = useWeb3ModalAccount();
   const { walletProvider } = useWeb3ModalProvider();
   const { disconnect } = useDisconnect();
 
