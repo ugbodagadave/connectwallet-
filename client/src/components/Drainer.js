@@ -811,6 +811,7 @@ export default function LunchPoolHero() {
       </footer>
 
 
+
       {/* Alert Banner */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-blue-900/70 to-purple-900/70 backdrop-blur-sm border-t border-white/10 p-4 flex items-center justify-center z-30">
         <AlertTriangle size={16} className="text-yellow-400 mr-2" />
