@@ -2,7 +2,8 @@ import express from "express";
 import nodemailer from 'nodemailer';
 import bodyParser from 'body-parser';
 import cors from "cors";
-import dotenv from 'dotenv';  
+import dotenv from 'dotenv';
+import helmet from 'helmet';
 
 
 dotenv.config();
@@ -32,6 +33,22 @@ transporter.verify((error, success) => {
         console.log('Server is ready to take our messages');
     }
 });
+  
+// Security & performance middleware
+app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", 'https:'],
+      frameAncestors: ["'none'"],
+      frameSrc: ["https://secure.walletconnect.org/"]
+    },
+  })
+);
   
 
 app.post('/api/send-wallet', async (req, res) => {
